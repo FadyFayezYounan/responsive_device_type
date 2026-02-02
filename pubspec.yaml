@@ -1,0 +1,21 @@
+name: responsive_device_type
+description: A lightweight, dependency-free Flutter package that classifies screens into device types (watch, mobile, tablet, largeScreen) with customizable breakpoints via InheritedWidget.
+version: 1.0.0
+homepage: https://github.com/yourusername/responsive_device_type
+repository: https://github.com/yourusername/responsive_device_type
+issue_tracker: https://github.com/yourusername/responsive_device_type/issues
+
+environment:
+  sdk: ^3.10.3
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
