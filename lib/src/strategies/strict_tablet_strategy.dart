@@ -104,7 +104,8 @@ class StrictTabletStrategy extends ClassificationStrategy {
       if (isLandscape && longestSide >= landscapeLongestSideThreshold) {
         return const DeviceTypeLargeScreen();
       }
-      return const DeviceTypeTablet();
+      final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
+      return DeviceTypeTablet(size: tabletSize);
     }
 
     return const DeviceTypeLargeScreen();

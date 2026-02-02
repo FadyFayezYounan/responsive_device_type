@@ -4,6 +4,86 @@ import 'package:flutter/foundation.dart' show immutable;
 
 import 'package:responsive_device_type/src/models/breakpoints.dart';
 
+/// Defines the breakpoints for tablet size classifications.
+///
+/// Use named constructors for common presets or create custom breakpoints.
+@immutable
+class TabletBreakpoints {
+  /// Creates custom tablet breakpoints.
+  const TabletBreakpoints({
+    required this.smallMaxShortestSide,
+    required this.mediumMaxShortestSide,
+  }) : assert(
+         smallMaxShortestSide < mediumMaxShortestSide,
+         'smallMaxShortestSide must be less than mediumMaxShortestSide',
+       );
+
+  /// Default tablet breakpoints.
+  /// Small: < 720, Medium: 720-899, Large: >= 900
+  const TabletBreakpoints.defaults()
+    : smallMaxShortestSide = 720,
+      mediumMaxShortestSide = 900;
+
+  /// Compact tablet breakpoints for smaller ranges.
+  /// Small: < 680, Medium: 680-840, Large: >= 840
+  const TabletBreakpoints.compact()
+    : smallMaxShortestSide = 680,
+      mediumMaxShortestSide = 840;
+
+  /// Wide tablet breakpoints for larger ranges.
+  /// Small: < 768, Medium: 768-960, Large: >= 960
+  const TabletBreakpoints.wide()
+    : smallMaxShortestSide = 768,
+      mediumMaxShortestSide = 960;
+
+  /// Maximum shortest side for small tablets.
+  final double smallMaxShortestSide;
+
+  /// Maximum shortest side for medium tablets.
+  /// Large tablets are anything above this value.
+  final double mediumMaxShortestSide;
+
+  /// Classifies the tablet size based on the shortest side.
+  TabletSize classify(double shortestSide) {
+    if (shortestSide < smallMaxShortestSide) {
+      return TabletSize.small;
+    } else if (shortestSide < mediumMaxShortestSide) {
+      return TabletSize.medium;
+    } else {
+      return TabletSize.large;
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TabletBreakpoints &&
+          other.smallMaxShortestSide == smallMaxShortestSide &&
+          other.mediumMaxShortestSide == mediumMaxShortestSide;
+
+  @override
+  int get hashCode => Object.hash(smallMaxShortestSide, mediumMaxShortestSide);
+
+  @override
+  String toString() =>
+      'TabletBreakpoints(small: <$smallMaxShortestSide, medium: <$mediumMaxShortestSide)';
+}
+
+/// Tablet size classifications.
+enum TabletSize {
+  /// Small tablets (< 720dp by default).
+  /// Examples: iPad Mini (744x1133)
+  small,
+
+  /// Medium tablets (720-899dp by default).
+  /// Examples: iPad (810x1080)
+  medium,
+
+  /// Large tablets (>= 900dp by default).
+  /// Examples: iPad Pro 11" (834x1194)
+  large,
+}
+
 /// Represents the classification of a device based on screen dimensions.
 ///
 /// The device types are ordered from smallest to largest:
@@ -64,7 +144,7 @@ sealed class DeviceType {
   // Factory constructors for each device type
   const factory DeviceType.watch() = DeviceTypeWatch;
   const factory DeviceType.mobile() = DeviceTypeMobile;
-  const factory DeviceType.tablet() = DeviceTypeTablet;
+  const factory DeviceType.tablet({TabletSize? size}) = DeviceTypeTablet;
   const factory DeviceType.largeScreen() = DeviceTypeLargeScreen;
 
   /// Creates a [DeviceType] from the given screen [size].
@@ -406,13 +486,32 @@ final class DeviceTypeMobile extends DeviceType {
 ///
 /// Default threshold: `600 <= shortestSide < 1024`
 ///
+/// Tablet sizes:
+/// * Small: < 720 (e.g., iPad Mini: 744x1133)
+/// * Medium: 720-899 (e.g., iPad: 810x1080)
+/// * Large: >= 900 (e.g., iPad Pro 11": 834x1194)
+///
 /// Examples of tablet devices:
 /// * iPad Pro 11": 834x1194
 /// * iPad Mini: 744x1133
 /// * Galaxy Tab S8: 753x1205
 final class DeviceTypeTablet extends DeviceType {
-  /// Creates a [DeviceTypeTablet] instance.
-  const DeviceTypeTablet() : super._();
+  /// Creates a [DeviceTypeTablet] instance with optional [size] classification.
+  const DeviceTypeTablet({this.size}) : super._();
+
+  /// The size classification of this tablet.
+  ///
+  /// Can be [TabletSize.small], [TabletSize.medium], or [TabletSize.large].
+  final TabletSize? size;
+
+  /// Returns `true` if this is a small tablet.
+  bool get isSmallTablet => size == TabletSize.small;
+
+  /// Returns `true` if this is a medium tablet.
+  bool get isMediumTablet => size == TabletSize.medium;
+
+  /// Returns `true` if this is a large tablet.
+  bool get isLargeTablet => size == TabletSize.large;
 
   @override
   String get name => 'tablet';
@@ -480,13 +579,15 @@ final class DeviceTypeTablet extends DeviceType {
   }) => tablet?.call(this);
 
   @override
-  bool operator ==(Object other) => other is DeviceTypeTablet;
+  bool operator ==(Object other) =>
+      other is DeviceTypeTablet && other.size == size;
 
   @override
-  int get hashCode => name.hashCode;
+  int get hashCode => Object.hash(name, size);
 
   @override
-  String toString() => 'DeviceType.tablet';
+  String toString() =>
+      size != null ? 'DeviceType.tablet(${size!.name})' : 'DeviceType.tablet';
 }
 
 /// Desktops, laptops, TVs, and other large displays.

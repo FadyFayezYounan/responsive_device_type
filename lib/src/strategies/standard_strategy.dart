@@ -65,7 +65,8 @@ class StandardStrategy extends ClassificationStrategy {
       return const DeviceTypeMobile();
     }
     if (shortestSide < breakpoints.tabletMaxShortestSide) {
-      return const DeviceTypeTablet();
+      final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
+      return DeviceTypeTablet(size: tabletSize);
     }
     return const DeviceTypeLargeScreen();
   }
