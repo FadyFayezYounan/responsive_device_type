@@ -65,7 +65,6 @@ class _ShowcaseBody extends StatelessWidget {
       DeviceTypeTablet(size: TabletSizeSmall()) => 2,
       DeviceTypeTablet(size: TabletSizeMedium()) => 3,
       DeviceTypeTablet(size: TabletSizeLarge()) => 4,
-      DeviceTypeTablet() => 3,
       DeviceTypeLargeScreen() => 4,
     };
 
@@ -109,7 +108,7 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final typeFromContext = DeviceBreakpoints.deviceTypeOf(context);
     final tabletSizeInfo = deviceType is DeviceTypeTablet
-        ? (deviceType as DeviceTypeTablet).size?.name ?? 'unspecified'
+        ? (deviceType as DeviceTypeTablet).size.name
         : 'N/A';
 
     return Card(
@@ -178,7 +177,6 @@ class _PatternCard extends StatelessWidget {
         'Medium tablet layout: 3 columns, balanced for standard tablets.',
       DeviceTypeTablet(size: TabletSizeLarge()) =>
         'Large tablet layout: 4 columns, optimized for iPad Pro-sized devices.',
-      DeviceTypeTablet() => 'Tablet layout: introduce a second column or rail.',
       DeviceTypeLargeScreen() =>
         'Large screen layout: show persistent navigation and density.',
     };
