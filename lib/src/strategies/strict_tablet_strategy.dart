@@ -112,6 +112,24 @@ class StrictTabletStrategy extends ClassificationStrategy {
   }
 
   @override
+  DeviceType classifyFromWidth(
+    double width,
+    DeviceBreakpointsData breakpoints,
+  ) {
+    if (width < breakpoints.watchMaxShortestSide) {
+      return const DeviceTypeWatch();
+    }
+    if (width < breakpoints.mobileMaxShortestSide) {
+      return const DeviceTypeMobile();
+    }
+    if (width < breakpoints.tabletMaxShortestSide) {
+      final tabletSize = breakpoints.tabletBreakpoints.classifyFromWidth(width);
+      return DeviceTypeTablet(size: tabletSize);
+    }
+    return const DeviceTypeLargeScreen();
+  }
+
+  @override
   bool operator ==(Object other) =>
       other is StrictTabletStrategy &&
       other.landscapeLongestSideThreshold == landscapeLongestSideThreshold;

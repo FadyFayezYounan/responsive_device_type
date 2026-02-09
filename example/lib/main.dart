@@ -62,9 +62,9 @@ class _ShowcaseBody extends StatelessWidget {
     final columns = switch (deviceType) {
       DeviceTypeWatch() => 1,
       DeviceTypeMobile() => 2,
-      DeviceTypeTablet(size: TabletSize.small) => 2,
-      DeviceTypeTablet(size: TabletSize.medium) => 3,
-      DeviceTypeTablet(size: TabletSize.large) => 4,
+      DeviceTypeTablet(size: TabletSizeSmall()) => 2,
+      DeviceTypeTablet(size: TabletSizeMedium()) => 3,
+      DeviceTypeTablet(size: TabletSizeLarge()) => 4,
       DeviceTypeTablet() => 3,
       DeviceTypeLargeScreen() => 4,
     };
@@ -172,11 +172,11 @@ class _PatternCard extends StatelessWidget {
       DeviceTypeWatch() =>
         'Watch layout: keep copy short and tap targets large.',
       DeviceTypeMobile() => 'Mobile layout: single column, bottom navigation.',
-      DeviceTypeTablet(size: TabletSize.small) =>
+      DeviceTypeTablet(size: TabletSizeSmall()) =>
         'Small tablet layout: 2 columns, suitable for compact tablet displays.',
-      DeviceTypeTablet(size: TabletSize.medium) =>
+      DeviceTypeTablet(size: TabletSizeMedium()) =>
         'Medium tablet layout: 3 columns, balanced for standard tablets.',
-      DeviceTypeTablet(size: TabletSize.large) =>
+      DeviceTypeTablet(size: TabletSizeLarge()) =>
         'Large tablet layout: 4 columns, optimized for iPad Pro-sized devices.',
       DeviceTypeTablet() => 'Tablet layout: introduce a second column or rail.',
       DeviceTypeLargeScreen() =>

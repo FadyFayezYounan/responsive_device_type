@@ -3,6 +3,7 @@ import 'dart:ui' show Size;
 import 'package:flutter/foundation.dart';
 
 import 'package:responsive_device_type/src/models/device_type.dart';
+import 'package:responsive_device_type/src/models/tablet_size.dart';
 import 'package:responsive_device_type/src/strategies/classification_strategy.dart';
 import 'package:responsive_device_type/src/strategies/standard_strategy.dart';
 
@@ -171,6 +172,18 @@ final class DeviceBreakpointsData with Diagnosticable {
   /// final type = breakpoints.classify(Size(393, 852)); // Mobile
   /// ```
   DeviceType classify(Size size) => strategy.classify(size, this);
+
+  /// Classifies a device based on the given [width].
+  ///
+  /// Unlike [classify] which uses the shortest side of a [Size],
+  /// this method uses the provided [width] directly.
+  ///
+  /// ```dart
+  /// final breakpoints = DeviceBreakpoints();
+  /// final type = breakpoints.classifyFromWidth(393); // Mobile
+  /// ```
+  DeviceType classifyFromWidth(double width) =>
+      strategy.classifyFromWidth(width, this);
 
   /// Creates a copy of these breakpoints with the given fields replaced.
   ///

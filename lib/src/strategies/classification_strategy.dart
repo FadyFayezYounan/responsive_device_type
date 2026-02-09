@@ -54,6 +54,14 @@ abstract class ClassificationStrategy {
   /// Returns a [DeviceType] representing the device classification.
   DeviceType classify(Size size, DeviceBreakpointsData breakpoints);
 
+  /// Classifies a device based on [width] using the given [breakpoints].
+  ///
+  /// Unlike [classify] which uses the shortest side of a [Size],
+  /// this method uses the provided [width] directly for classification.
+  ///
+  /// Returns a [DeviceType] representing the device classification.
+  DeviceType classifyFromWidth(double width, DeviceBreakpointsData breakpoints);
+
   /// Classifies a device based on [MediaQueryData] using the given [breakpoints].
   ///
   /// This is a convenience method that extracts the size from [mediaQuery]
