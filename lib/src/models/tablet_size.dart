@@ -42,11 +42,11 @@ final class TabletBreakpoints {
   /// Classifies the tablet size based on the shortest side.
   TabletSize classify(double shortestSide) {
     if (shortestSide < smallMaxShortestSide) {
-      return const TabletSizeSmall();
+      return const TabletSize.small();
     } else if (shortestSide < mediumMaxShortestSide) {
-      return const TabletSizeMedium();
+      return const TabletSize.medium();
     } else {
-      return const TabletSizeLarge();
+      return const TabletSize.large();
     }
   }
 
@@ -56,11 +56,11 @@ final class TabletBreakpoints {
   /// this method uses the provided [width] directly.
   TabletSize classifyFromWidth(double width) {
     if (width < smallMaxShortestSide) {
-      return const TabletSizeSmall();
+      return const TabletSize.small();
     } else if (width < mediumMaxShortestSide) {
-      return const TabletSizeMedium();
+      return const TabletSize.medium();
     } else {
-      return const TabletSizeLarge();
+      return const TabletSize.large();
     }
   }
 

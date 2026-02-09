@@ -59,16 +59,16 @@ class StandardStrategy extends ClassificationStrategy {
     final shortestSide = size.shortestSide;
 
     if (shortestSide < breakpoints.watchMaxShortestSide) {
-      return const DeviceTypeWatch();
+      return const DeviceType.watch();
     }
     if (shortestSide < breakpoints.mobileMaxShortestSide) {
-      return const DeviceTypeMobile();
+      return const DeviceType.mobile();
     }
     if (shortestSide < breakpoints.tabletMaxShortestSide) {
       final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
-      return DeviceTypeTablet(size: tabletSize);
+      return DeviceType.tablet(size: tabletSize);
     }
-    return const DeviceTypeLargeScreen();
+    return const DeviceType.largeScreen();
   }
 
   @override
@@ -77,16 +77,16 @@ class StandardStrategy extends ClassificationStrategy {
     DeviceBreakpointsData breakpoints,
   ) {
     if (width < breakpoints.watchMaxShortestSide) {
-      return const DeviceTypeWatch();
+      return const DeviceType.watch();
     }
     if (width < breakpoints.mobileMaxShortestSide) {
-      return const DeviceTypeMobile();
+      return const DeviceType.mobile();
     }
     if (width < breakpoints.tabletMaxShortestSide) {
       final tabletSize = breakpoints.tabletBreakpoints.classifyFromWidth(width);
-      return DeviceTypeTablet(size: tabletSize);
+      return DeviceType.tablet(size: tabletSize);
     }
-    return const DeviceTypeLargeScreen();
+    return const DeviceType.largeScreen();
   }
 
   @override

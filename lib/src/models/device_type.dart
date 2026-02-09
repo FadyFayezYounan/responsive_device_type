@@ -65,7 +65,7 @@ sealed class DeviceType {
   // Factory constructors for each device type
   const factory DeviceType.watch() = DeviceTypeWatch;
   const factory DeviceType.mobile() = DeviceTypeMobile;
-  const factory DeviceType.tablet({required TabletSize size}) = DeviceTypeTablet;
+  const factory DeviceType.tablet({TabletSize size}) = DeviceTypeTablet;
   const factory DeviceType.largeScreen() = DeviceTypeLargeScreen;
 
   /// Creates a [DeviceType] from the given screen [size].
@@ -446,7 +446,9 @@ final class DeviceTypeMobile extends DeviceType {
 /// * Galaxy Tab S8: 753x1205
 final class DeviceTypeTablet extends DeviceType {
   /// Creates a [DeviceTypeTablet] instance with [size] classification.
-  const DeviceTypeTablet({required this.size}) : super._();
+  ///
+  /// Defaults to [TabletSizeMedium] if not specified.
+  const DeviceTypeTablet({this.size = const TabletSizeMedium()}) : super._();
 
   /// The size classification of this tablet.
   ///

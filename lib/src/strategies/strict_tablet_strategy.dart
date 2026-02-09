@@ -92,23 +92,23 @@ class StrictTabletStrategy extends ClassificationStrategy {
 
     // Watch and mobile classification remains the same
     if (shortestSide < breakpoints.watchMaxShortestSide) {
-      return const DeviceTypeWatch();
+      return const DeviceType.watch();
     }
     if (shortestSide < breakpoints.mobileMaxShortestSide) {
-      return const DeviceTypeMobile();
+      return const DeviceType.mobile();
     }
 
     // For tablet vs large screen, apply stricter checks in landscape
     if (shortestSide < breakpoints.tabletMaxShortestSide) {
       // In landscape, if the longest side is large enough, treat as large screen
       if (isLandscape && longestSide >= landscapeLongestSideThreshold) {
-        return const DeviceTypeLargeScreen();
+        return const DeviceType.largeScreen();
       }
       final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
-      return DeviceTypeTablet(size: tabletSize);
+      return DeviceType.tablet(size: tabletSize);
     }
 
-    return const DeviceTypeLargeScreen();
+    return const DeviceType.largeScreen();
   }
 
   @override
@@ -117,16 +117,16 @@ class StrictTabletStrategy extends ClassificationStrategy {
     DeviceBreakpointsData breakpoints,
   ) {
     if (width < breakpoints.watchMaxShortestSide) {
-      return const DeviceTypeWatch();
+      return const DeviceType.watch();
     }
     if (width < breakpoints.mobileMaxShortestSide) {
-      return const DeviceTypeMobile();
+      return const DeviceType.mobile();
     }
     if (width < breakpoints.tabletMaxShortestSide) {
       final tabletSize = breakpoints.tabletBreakpoints.classifyFromWidth(width);
-      return DeviceTypeTablet(size: tabletSize);
+      return DeviceType.tablet(size: tabletSize);
     }
-    return const DeviceTypeLargeScreen();
+    return const DeviceType.largeScreen();
   }
 
   @override

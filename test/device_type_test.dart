@@ -33,7 +33,7 @@ void main() {
     });
 
     test('DeviceTypeTablet properties', () {
-      const type = DeviceTypeTablet(size: TabletSizeMedium());
+      const type = DeviceTypeTablet();
 
       expect(type.isWatch, isFalse);
       expect(type.isMobile, isFalse);
@@ -65,14 +65,14 @@ void main() {
     test('same types are equal', () {
       expect(const DeviceTypeWatch(), const DeviceTypeWatch());
       expect(const DeviceTypeMobile(), const DeviceTypeMobile());
-      expect(const DeviceTypeTablet(size: TabletSizeMedium()), const DeviceTypeTablet(size: TabletSizeMedium()));
+      expect(const DeviceTypeTablet(), const DeviceTypeTablet());
       expect(const DeviceTypeLargeScreen(), const DeviceTypeLargeScreen());
     });
 
     test('different types are not equal', () {
       const watch = DeviceTypeWatch();
       const mobile = DeviceTypeMobile();
-      const tablet = DeviceTypeTablet(size: TabletSizeMedium());
+      const tablet = DeviceTypeTablet();
       const largeScreen = DeviceTypeLargeScreen();
 
       expect(watch, isNot(mobile));
@@ -93,8 +93,8 @@ void main() {
         const DeviceTypeMobile().hashCode,
       );
       expect(
-        const DeviceTypeTablet(size: TabletSizeMedium()).hashCode,
-        const DeviceTypeTablet(size: TabletSizeMedium()).hashCode,
+        const DeviceTypeTablet().hashCode,
+        const DeviceTypeTablet().hashCode,
       );
       expect(
         const DeviceTypeLargeScreen().hashCode,
@@ -116,7 +116,7 @@ void main() {
 
       expect(classify(const DeviceTypeWatch()), 'watch');
       expect(classify(const DeviceTypeMobile()), 'mobile');
-      expect(classify(const DeviceTypeTablet(size: TabletSizeMedium())), 'tablet');
+      expect(classify(const DeviceTypeTablet()), 'tablet');
       expect(classify(const DeviceTypeLargeScreen()), 'largeScreen');
     });
   });
