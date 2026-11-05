@@ -1,30 +1,40 @@
-// // This is a basic Flutter widget test.
-// //
-// // To perform an interaction with a widget in your test, use the WidgetTester
-// // utility in the flutter_test package. For example, you can send tap and scroll
-// // gestures. You can also use WidgetTester to find child widgets in the widget
-// // tree, read text, and verify that the values of widget properties are correct.
+import 'dart:ui';
 
-// import 'package:flutter/material.dart';
-// import 'package:flutter_test/flutter_test.dart';
+import 'package:example/main.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-// import 'package:example/main.dart';
+void main() {
+  Future<void> pumpAt(WidgetTester tester, Size size) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(const ResponsiveDeviceTypeExampleApp());
+  }
 
-// void main() {
-//   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-//     // Build our app and trigger a frame.
-//     await tester.pumpWidget(const MyApp());
+  testWidgets('phone uses bottom navigation', (tester) async {
+    await pumpAt(tester, const Size(393, 852));
+    expect(find.text('Current device: mobile'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+  });
 
-//     // Verify that our counter starts at 0.
-//     expect(find.text('0'), findsOneWidget);
-//     expect(find.text('1'), findsNothing);
+  testWidgets('desktop uses a navigation rail', (tester) async {
+    await pumpAt(tester, const Size(1280, 800));
+    expect(find.text('Current device: largeScreen'), findsOneWidget);
+    expect(find.byType(NavigationRail), findsOneWidget);
+  });
 
-//     // Tap the '+' icon and trigger a frame.
-//     await tester.tap(find.byIcon(Icons.add));
-//     await tester.pump();
-
-//     // Verify that our counter has incremented.
-//     expect(find.text('0'), findsNothing);
-//     expect(find.text('1'), findsOneWidget);
-//   });
-// }
+  testWidgets('dual-screen device shows two panes', (tester) async {
+    tester.view.displayFeatures = const [
+      DisplayFeature(
+        bounds: Rect.fromLTWH(540, 0, 34, 720),
+        type: DisplayFeatureType.hinge,
+        state: DisplayFeatureState.postureFlat,
+      ),
+    ];
+    await pumpAt(tester, const Size(1114, 720));
+    expect(find.text('Fold'), findsOneWidget);
+    expect(find.textContaining('Separating: true'), findsWidgets);
+  });
+}

@@ -143,9 +143,7 @@ void main() {
     });
 
     test('uses custom breakpoints', () {
-      const customBreakpoints = DeviceBreakpointsData(
-        mobileMaxShortestSide: 400,
-      );
+      const customBreakpoints = DeviceBreakpointsData(mobileMax: 400);
 
       // 393 would be mobile with defaults, but watch with custom
       final defaultType = DeviceType.fromSize(const Size(350, 400));

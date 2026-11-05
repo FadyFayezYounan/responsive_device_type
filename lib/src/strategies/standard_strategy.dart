@@ -1,99 +1,38 @@
 import 'dart:ui' show Size;
 
-import 'package:flutter/foundation.dart' show immutable;
-
 import 'package:responsive_device_type/src/models/breakpoints.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 import 'package:responsive_device_type/src/strategies/classification_strategy.dart';
 
-/// A simple classification strategy based solely on the screen's shortest side.
+/// Classifies by the screen's shortest side. This is the default strategy.
 ///
-/// This strategy provides consistent device classification regardless of
-/// screen orientation. A phone rotated to landscape will still be classified
-/// as mobile because the shortest side (the width in portrait, height in
-/// landscape) remains the same.
+/// The result does not depend on orientation: rotating a phone to landscape
+/// keeps it [DeviceTypeMobile], because its shortest side stays the same.
 ///
-/// ## Classification Logic
-///
-/// The device type is determined by comparing `size.shortestSide` against
-/// the breakpoint thresholds:
-///
-/// | Device Type   | Condition                                    |
-/// |---------------|----------------------------------------------|
-/// | Watch         | shortestSide < watchMaxShortestSide (300)    |
-/// | Mobile        | shortestSide < mobileMaxShortestSide (600)   |
-/// | Tablet        | shortestSide < tabletMaxShortestSide (1024)  |
-/// | LargeScreen   | shortestSide >= tabletMaxShortestSide        |
-///
-/// ## When to Use
-///
-/// Use [StandardStrategy] when you want:
-/// * Simple, predictable classification
-/// * Consistent behavior across orientations
-/// * Mobile-first responsive design
-///
-/// ## Example
+/// | Device type   | Condition (defaults)            |
+/// |---------------|---------------------------------|
+/// | Watch         | `shortestSide < watchMax` (300) |
+/// | Mobile        | `shortestSide < mobileMax` (600)|
+/// | Tablet        | `shortestSide < tabletMax` (1024)|
+/// | LargeScreen   | `shortestSide >= tabletMax`     |
 ///
 /// ```dart
-/// const breakpoints = DeviceBreakpoints(
-///   strategy: StandardStrategy(),
-/// );
-///
-/// // iPhone 14 Pro (393x852): shortestSide = 393 -> Mobile
-/// // iPad Pro 11" (834x1194): shortestSide = 834 -> Tablet
-/// // MacBook Pro (1512x982): shortestSide = 982 -> Tablet
+/// // iPhone 15 (393x852)        -> mobile
+/// // iPad Pro 11" (834x1194)    -> tablet (medium)
+/// // iPad Pro 12.9" (1024x1366) -> largeScreen (shortest side == 1024)
+/// // 1366x768 laptop            -> tablet (shortest side 768)
 /// ```
 ///
-/// See also:
-///
-///  * [StrictTabletStrategy], which uses additional heuristics for tablet
-///    detection, particularly useful for web and desktop applications.
-///  * [ClassificationStrategy], the base class for all strategies.
-@immutable
-class StandardStrategy extends ClassificationStrategy {
-  /// Creates a [StandardStrategy] instance.
+/// That last row is the trade-off of this strategy: laptops and desktop
+/// windows with a short height count as tablets. For web and desktop apps,
+/// use `StrictTabletStrategy` or `WindowWidthStrategy`.
+final class StandardStrategy extends ClassificationStrategy {
+  /// Creates a [StandardStrategy].
   const StandardStrategy();
 
   @override
-  DeviceType classify(Size size, DeviceBreakpointsData breakpoints) {
-    final shortestSide = size.shortestSide;
-
-    if (shortestSide < breakpoints.watchMaxShortestSide) {
-      return const DeviceType.watch();
-    }
-    if (shortestSide < breakpoints.mobileMaxShortestSide) {
-      return const DeviceType.mobile();
-    }
-    if (shortestSide < breakpoints.tabletMaxShortestSide) {
-      final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
-      return DeviceType.tablet(size: tabletSize);
-    }
-    return const DeviceType.largeScreen();
-  }
-
-  @override
-  DeviceType classifyFromWidth(
-    double width,
-    DeviceBreakpointsData breakpoints,
-  ) {
-    if (width < breakpoints.watchMaxShortestSide) {
-      return const DeviceType.watch();
-    }
-    if (width < breakpoints.mobileMaxShortestSide) {
-      return const DeviceType.mobile();
-    }
-    if (width < breakpoints.tabletMaxShortestSide) {
-      final tabletSize = breakpoints.tabletBreakpoints.classifyFromWidth(width);
-      return DeviceType.tablet(size: tabletSize);
-    }
-    return const DeviceType.largeScreen();
-  }
-
-  @override
-  bool operator ==(Object other) => other is StandardStrategy;
-
-  @override
-  int get hashCode => runtimeType.hashCode;
+  DeviceType classify(Size size, DeviceBreakpointsData breakpoints) =>
+      classifyExtent(size.shortestSide, breakpoints);
 
   @override
   String toString() => 'StandardStrategy()';

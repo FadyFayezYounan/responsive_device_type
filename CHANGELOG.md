@@ -1,57 +1,50 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2024-01-01
+## 1.0.0 - 2026-11-05
 
-### Added
+Initial release.
 
-- **Device Type Classification**: Sealed class hierarchy (`DeviceType`) with four device categories:
-  - `DeviceTypeWatch`: For smartwatches and very small screens (< 300)
-  - `DeviceTypeMobile`: For phones and handheld devices (300 - 599)
-  - `DeviceTypeTablet`: For tablets and medium screens (600 - 1023)
-  - `DeviceTypeLargeScreen`: For desktops, laptops, and TVs (>= 1024)
+### Classification
 
-- **DeviceBreakpoints**: Configurable threshold values for device classification
-  - `DeviceBreakpoints()`: Default constructor with sensible defaults
-  - `DeviceBreakpoints.defaults()`: Explicit default breakpoints
-  - `DeviceBreakpoints.material3()`: Material Design 3 window size classes
-  - `copyWith()` for easy customization
+- Sealed `DeviceType` hierarchy: `DeviceTypeWatch`, `DeviceTypeMobile`,
+  `DeviceTypeTablet`, `DeviceTypeLargeScreen`.
+- Tablets carry a sealed `TabletSize` (small, medium, large), configured with
+  `TabletBreakpoints` (`defaults()`, `compact()`, `wide()`, or custom).
+- `DeviceBreakpointsData` with `watchMax`, `mobileMax`, `tabletMax`,
+  `tabletBreakpoints`, and `strategy`, plus `defaults()` and `material3()`
+  presets.
+- Strategies: `StandardStrategy` (shortest side, default),
+  `WindowWidthStrategy` (width, used by `material3()`), and
+  `StrictTabletStrategy` (wide landscape windows become large screens).
+  Custom strategies extend `ClassificationStrategy` and can reuse
+  `classifyExtent`.
+- `DeviceType.isAtLeast` / `isAtMost` comparisons and the mobile-first
+  `DeviceType.select`.
+- `DeviceType.fromSize` and `DeviceType.fromWidth` for use without a
+  `BuildContext`.
+- `when` / `maybeWhen` / `whenOrNull` / `map` / `maybeMap` / `mapOrNull` on
+  `DeviceType` and `TabletSize`.
 
-- **Classification Strategies**: Pluggable strategies for different use cases
-  - `StandardStrategy`: Simple shortestSide-based classification
-  - `StrictTabletStrategy`: Enhanced tablet detection for web/desktop apps
+### Widgets and context
 
-- **DeviceBreakpointsScope**: InheritedWidget for per-subtree breakpoint customization
-  - `of(context)`: Get breakpoints or throw
-  - `maybeOf(context)`: Get breakpoints or null
+- `DeviceBreakpoints` scope with `of`, `maybeOf`, `deviceTypeOf`, and
+  `maybeDeviceTypeOf`.
+- `BuildContext` extension `DeviceTypeContext`: `deviceType`,
+  `deviceBreakpoints`, `foldInfo`, `isWatch`, `isMobile`, `isTablet`,
+  `isLargeScreen`, `isCompact`, `isExpanded`, and `responsive(...)`.
+- `DeviceTypeBuilder`, `ResponsiveLayout`, `ResponsiveValue`,
+  `DeviceTypeSwitcher`, and `DeviceTypeVisibility`. Only `mobile` is
+  required; missing entries fall back mobile-first.
 
-- **DeviceTypeResolver**: Static methods for device type resolution
-  - `of(context)`: Resolve from BuildContext
-  - `maybeOf(context)`: Safe resolution with null
-  - `resolve(mediaQuery, breakpoints)`: Explicit resolution
-  - `fromSize(size, breakpoints)`: Resolution from Size
+### Foldables
 
-- **DeviceTypeX Extension**: Convenient BuildContext extension
-  - `context.deviceType`: Get current device type
-  - `context.deviceTypeOrNull`: Safe device type access
-  - Boolean properties: `isWatch`, `isMobile`, `isTablet`, `isLargeScreen`
-  - Category properties: `isCompact`, `isExpanded`
-
-- **Builder Widgets**: Reactive widgets for device-aware UIs
-  - `DeviceTypeBuilder`: Builds based on DeviceType
-  - `DeviceTypeBuilderWithData`: Provides both DeviceType and MediaQueryData
-
-- **Factory Constructors** on DeviceType:
-  - `DeviceType.fromSize(size)`: Create from Size
-  - `DeviceType.fromMediaQuery(mediaQuery)`: Create from MediaQueryData
-
-### Notes
-
-- Zero external dependencies (Flutter SDK only)
-- Full test coverage
-- Comprehensive dartdocs on all public APIs
-- Supports all Flutter platforms (iOS, Android, Web, macOS, Windows, Linux)
+- `FoldInfo` reads the fold or hinge from `MediaQuery.displayFeaturesOf`:
+  `posture`, `hingeAxis`, `isTabletop`, `isBook`, `isSeparating`, `bounds`,
+  and `panes`.
+- `DualPaneLayout` places two widgets around a separating hinge, respects
+  text direction, and gives each pane its own `MediaQuery`.

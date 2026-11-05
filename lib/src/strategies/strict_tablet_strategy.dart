@@ -1,7 +1,5 @@
 import 'dart:ui' show Size;
 
-import 'package:flutter/foundation.dart' show immutable;
-
 import 'package:responsive_device_type/src/models/breakpoints.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 import 'package:responsive_device_type/src/strategies/classification_strategy.dart';
@@ -16,7 +14,7 @@ import 'package:responsive_device_type/src/strategies/classification_strategy.da
 /// ## Classification Logic
 ///
 /// For watch and mobile classifications, behavior is identical to
-/// [StandardStrategy]. For tablet vs large screen distinction, this strategy
+/// `StandardStrategy`. For tablet vs large screen distinction, this strategy
 /// considers screen orientation:
 ///
 /// In **portrait** orientation (height > width):
@@ -34,7 +32,7 @@ import 'package:responsive_device_type/src/strategies/classification_strategy.da
 /// * MacBook Pro: 1512x982 (scaled)
 ///
 /// A browser window sized to 900x600 (tablet-like shortest side) would still
-/// be classified as a tablet with [StandardStrategy], but with
+/// be classified as a tablet with `StandardStrategy`, but with
 /// [StrictTabletStrategy], if the longest side is >= 1366, it's recognized
 /// as a desktop/laptop.
 ///
@@ -49,7 +47,7 @@ import 'package:responsive_device_type/src/strategies/classification_strategy.da
 /// ## Example
 ///
 /// ```dart
-/// const breakpoints = DeviceBreakpoints(
+/// const breakpoints = DeviceBreakpointsData(
 ///   strategy: StrictTabletStrategy(),
 /// );
 ///
@@ -61,10 +59,9 @@ import 'package:responsive_device_type/src/strategies/classification_strategy.da
 ///
 /// See also:
 ///
-///  * [StandardStrategy], the simpler default strategy.
+///  * `StandardStrategy`, the simpler default strategy.
 ///  * [ClassificationStrategy], the base class for all strategies.
-@immutable
-class StrictTabletStrategy extends ClassificationStrategy {
+final class StrictTabletStrategy extends ClassificationStrategy {
   /// Creates a [StrictTabletStrategy] with the given threshold.
   ///
   /// The [landscapeLongestSideThreshold] determines the minimum longest-side
@@ -86,52 +83,20 @@ class StrictTabletStrategy extends ClassificationStrategy {
 
   @override
   DeviceType classify(Size size, DeviceBreakpointsData breakpoints) {
-    final shortestSide = size.shortestSide;
-    final longestSide = size.longestSide;
+    final type = classifyExtent(size.shortestSide, breakpoints);
     final isLandscape = size.width >= size.height;
-
-    // Watch and mobile classification remains the same
-    if (shortestSide < breakpoints.watchMaxShortestSide) {
-      return const DeviceType.watch();
+    if (type is DeviceTypeTablet &&
+        isLandscape &&
+        size.longestSide >= landscapeLongestSideThreshold) {
+      return const DeviceType.largeScreen();
     }
-    if (shortestSide < breakpoints.mobileMaxShortestSide) {
-      return const DeviceType.mobile();
-    }
-
-    // For tablet vs large screen, apply stricter checks in landscape
-    if (shortestSide < breakpoints.tabletMaxShortestSide) {
-      // In landscape, if the longest side is large enough, treat as large screen
-      if (isLandscape && longestSide >= landscapeLongestSideThreshold) {
-        return const DeviceType.largeScreen();
-      }
-      final tabletSize = breakpoints.tabletBreakpoints.classify(shortestSide);
-      return DeviceType.tablet(size: tabletSize);
-    }
-
-    return const DeviceType.largeScreen();
-  }
-
-  @override
-  DeviceType classifyFromWidth(
-    double width,
-    DeviceBreakpointsData breakpoints,
-  ) {
-    if (width < breakpoints.watchMaxShortestSide) {
-      return const DeviceType.watch();
-    }
-    if (width < breakpoints.mobileMaxShortestSide) {
-      return const DeviceType.mobile();
-    }
-    if (width < breakpoints.tabletMaxShortestSide) {
-      final tabletSize = breakpoints.tabletBreakpoints.classifyFromWidth(width);
-      return DeviceType.tablet(size: tabletSize);
-    }
-    return const DeviceType.largeScreen();
+    return type;
   }
 
   @override
   bool operator ==(Object other) =>
       other is StrictTabletStrategy &&
+      other.runtimeType == runtimeType &&
       other.landscapeLongestSideThreshold == landscapeLongestSideThreshold;
 
   @override
@@ -139,5 +104,6 @@ class StrictTabletStrategy extends ClassificationStrategy {
 
   @override
   String toString() =>
-      'StrictTabletStrategy(landscapeLongestSideThreshold: $landscapeLongestSideThreshold)';
+      'StrictTabletStrategy(landscapeLongestSideThreshold: '
+      '$landscapeLongestSideThreshold)';
 }

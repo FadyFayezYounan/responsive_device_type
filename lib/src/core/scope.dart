@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:responsive_device_type/src/models/breakpoints.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 
@@ -10,29 +10,32 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 ///
 /// If no custom breakpoints are provided, default breakpoints will be used.
 ///
-/// Example:
+/// You only need this widget to change the defaults. Without it,
+/// [DeviceBreakpointsData.defaults] is used.
+///
 /// ```dart
 /// DeviceBreakpoints(
-///   breakpoints: DeviceBreakpointsData(
-///     mobile: 480,
-///     tablet: 768,
-///     desktop: 1024,
+///   breakpoints: const DeviceBreakpointsData(
+///     mobileMax: 640,
+///     strategy: WindowWidthStrategy(),
 ///   ),
-///   child: MyApp(),
+///   child: const MyApp(),
 /// )
 /// ```
 ///
+/// Scopes can be nested; the nearest one wins.
+///
 /// See also:
 ///  * [DeviceBreakpointsData], which defines the breakpoint values.
-///  * [DeviceType], the enumeration of device types.
+///  * [DeviceType], the sealed hierarchy of device types.
 class DeviceBreakpoints extends StatelessWidget {
   /// Creates a widget that provides device breakpoints to its descendants.
   ///
   /// The [child] argument is required and represents the widget subtree that
   /// will have access to these breakpoints.
   ///
-  /// The [breakpoints] argument is optional. If not provided, default
-  /// breakpoints will be used.
+  /// The [breakpoints] argument is optional and defaults to
+  /// [DeviceBreakpointsData.defaults].
   const DeviceBreakpoints({
     required this.child,
     super.key,
@@ -41,8 +44,7 @@ class DeviceBreakpoints extends StatelessWidget {
 
   /// The custom breakpoints to use for device classification.
   ///
-  /// These breakpoints determine the threshold widths for classifying
-  /// devices as mobile, tablet, or desktop.
+  /// Defaults to [DeviceBreakpointsData.defaults].
   final DeviceBreakpointsData breakpoints;
 
   /// The widget below this widget in the tree.
@@ -102,8 +104,8 @@ class DeviceBreakpoints extends StatelessWidget {
   /// Example:
   /// ```dart
   /// final deviceType = DeviceBreakpoints.deviceTypeOf(context);
-  /// if (deviceType == DeviceType.mobile) {
-  ///   return MobileLayout();
+  /// if (deviceType is DeviceTypeMobile) {
+  ///   return const MobileLayout();
   /// }
   /// ```
   static DeviceType deviceTypeOf(BuildContext context) {
@@ -120,12 +122,10 @@ class DeviceBreakpoints extends StatelessWidget {
   /// This is useful when you want to handle the absence of custom breakpoints
   /// differently.
   ///
-  /// Example:
   /// ```dart
   /// final deviceType = DeviceBreakpoints.maybeDeviceTypeOf(context);
   /// if (deviceType == null) {
-  ///   // No custom breakpoints configured
-  ///   return DefaultLayout();
+  ///   // No DeviceBreakpoints ancestor.
   /// }
   /// ```
   static DeviceType? maybeDeviceTypeOf(BuildContext context) {

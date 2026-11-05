@@ -1,82 +1,67 @@
 import 'package:flutter/foundation.dart';
 
-/// Defines the breakpoints for tablet size classifications.
+/// Thresholds that split `DeviceTypeTablet` into small, medium, and large.
 ///
-/// Use named constructors for common presets or create custom breakpoints.
+/// Values are logical pixels, measured along the same dimension the active
+/// `ClassificationStrategy` uses (the shortest side for `StandardStrategy`,
+/// the window width for `WindowWidthStrategy`).
+///
+/// | Size   | Default range (`defaults()`) | Example devices (portrait, dp)          |
+/// |--------|------------------------------|-----------------------------------------|
+/// | small  | < 720                        | Nexus 7 (600), Pixel Fold inner (~701)  |
+/// | medium | 720 – 899                    | iPad mini (744), iPad (820), iPad Pro 11" (834) |
+/// | large  | >= 900                       | 10"+ Android tablets, resized windows   |
+///
+/// Note that almost every iPad lands in `medium` with the defaults. Use
+/// [TabletBreakpoints.compact] or a custom instance if you need to split them.
 @immutable
 final class TabletBreakpoints {
   /// Creates custom tablet breakpoints.
-  const TabletBreakpoints({
-    required this.smallMaxShortestSide,
-    required this.mediumMaxShortestSide,
-  }) : assert(
-         smallMaxShortestSide < mediumMaxShortestSide,
-         'smallMaxShortestSide must be less than mediumMaxShortestSide',
-       );
-
-  /// Default tablet breakpoints.
-  /// Small: < 720, Medium: 720-899, Large: >= 900
-  const TabletBreakpoints.defaults()
-    : smallMaxShortestSide = 720,
-      mediumMaxShortestSide = 900;
-
-  /// Compact tablet breakpoints for smaller ranges.
-  /// Small: < 680, Medium: 680-840, Large: >= 840
-  const TabletBreakpoints.compact()
-    : smallMaxShortestSide = 680,
-      mediumMaxShortestSide = 840;
-
-  /// Wide tablet breakpoints for larger ranges.
-  /// Small: < 768, Medium: 768-960, Large: >= 960
-  const TabletBreakpoints.wide()
-    : smallMaxShortestSide = 768,
-      mediumMaxShortestSide = 960;
-
-  /// Maximum shortest side for small tablets.
-  final double smallMaxShortestSide;
-
-  /// Maximum shortest side for medium tablets.
-  /// Large tablets are anything above this value.
-  final double mediumMaxShortestSide;
-
-  /// Classifies the tablet size based on the shortest side.
-  TabletSize classify(double shortestSide) {
-    if (shortestSide < smallMaxShortestSide) {
-      return const TabletSize.small();
-    } else if (shortestSide < mediumMaxShortestSide) {
-      return const TabletSize.medium();
-    } else {
-      return const TabletSize.large();
-    }
-  }
-
-  /// Classifies the tablet size based on width only.
   ///
-  /// Unlike [classify] which uses the shortest side,
-  /// this method uses the provided [width] directly.
-  TabletSize classifyFromWidth(double width) {
-    if (width < smallMaxShortestSide) {
-      return const TabletSize.small();
-    } else if (width < mediumMaxShortestSide) {
-      return const TabletSize.medium();
-    } else {
-      return const TabletSize.large();
-    }
+  /// Both values must be positive and `smallMax < mediumMax`.
+  const TabletBreakpoints({required this.smallMax, required this.mediumMax})
+    : assert(smallMax > 0, 'smallMax must be positive'),
+      assert(smallMax < mediumMax, 'smallMax must be less than mediumMax');
+
+  /// Default tablet breakpoints: small `< 720`, medium `< 900`, large `>= 900`.
+  const TabletBreakpoints.defaults() : smallMax = 720, mediumMax = 900;
+
+  /// Compact tablet breakpoints: small `< 680`, medium `< 800`, large `>= 800`.
+  ///
+  /// Splits iPads: iPad mini (744) is medium, iPad (820) and
+  /// iPad Pro 11" (834) are large.
+  const TabletBreakpoints.compact() : smallMax = 680, mediumMax = 800;
+
+  /// Wide tablet breakpoints: small `< 768`, medium `< 960`, large `>= 960`.
+  const TabletBreakpoints.wide() : smallMax = 768, mediumMax = 960;
+
+  /// Upper bound (exclusive) for [TabletSizeSmall].
+  final double smallMax;
+
+  /// Upper bound (exclusive) for [TabletSizeMedium]. Anything at or above
+  /// this value is [TabletSizeLarge].
+  final double mediumMax;
+
+  /// Classifies a tablet by [extent], the dimension chosen by the strategy.
+  TabletSize classify(double extent) {
+    if (extent < smallMax) return const TabletSize.small();
+    if (extent < mediumMax) return const TabletSize.medium();
+    return const TabletSize.large();
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is TabletBreakpoints &&
-          other.smallMaxShortestSide == smallMaxShortestSide &&
-          other.mediumMaxShortestSide == mediumMaxShortestSide;
+          other.smallMax == smallMax &&
+          other.mediumMax == mediumMax;
 
   @override
-  int get hashCode => Object.hash(smallMaxShortestSide, mediumMaxShortestSide);
+  int get hashCode => Object.hash(smallMax, mediumMax);
 
   @override
   String toString() =>
-      'TabletBreakpoints(small: <$smallMaxShortestSide, medium: <$mediumMaxShortestSide)';
+      'TabletBreakpoints(smallMax: $smallMax, mediumMax: $mediumMax)';
 }
 
 /// Tablet size classifications.
@@ -205,9 +190,9 @@ sealed class TabletSize {
   });
 }
 
-/// Small tablets (< 720dp by default).
+/// Small tablets (`< 720` by default).
 ///
-/// Examples: iPad Mini (744x1133)
+/// Examples: 7" Android tablets, unfolded book-style foldables.
 final class TabletSizeSmall extends TabletSize {
   /// Creates a [TabletSizeSmall] instance.
   const TabletSizeSmall() : super._();
@@ -278,9 +263,9 @@ final class TabletSizeSmall extends TabletSize {
   String toString() => 'TabletSize.small';
 }
 
-/// Medium tablets (720-899dp by default).
+/// Medium tablets (`720 – 899` by default).
 ///
-/// Examples: iPad (810x1080)
+/// Examples: iPad mini (744x1133), iPad (820x1180), iPad Pro 11" (834x1194).
 final class TabletSizeMedium extends TabletSize {
   /// Creates a [TabletSizeMedium] instance.
   const TabletSizeMedium() : super._();
@@ -351,9 +336,9 @@ final class TabletSizeMedium extends TabletSize {
   String toString() => 'TabletSize.medium';
 }
 
-/// Large tablets (>= 900dp by default).
+/// Large tablets (`>= 900` by default).
 ///
-/// Examples: iPad Pro 11" (834x1194)
+/// Examples: large Android tablets and desktop windows in the tablet range.
 final class TabletSizeLarge extends TabletSize {
   /// Creates a [TabletSizeLarge] instance.
   const TabletSizeLarge() : super._();
