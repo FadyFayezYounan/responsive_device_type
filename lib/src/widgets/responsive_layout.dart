@@ -3,52 +3,49 @@ import 'package:flutter/widgets.dart';
 import 'package:responsive_device_type/src/core/scope.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 
-/// Picks a per-device widget for the current [DeviceType].
+/// Shows the widget for the current [DeviceType], falling back mobile-first.
 ///
-/// Example:
+/// Only [mobile] is required. Missing widgets fall back to the next smaller
+/// type that has one: `largeScreen → tablet → mobile` and `watch → mobile`.
+///
 /// ```dart
 /// ResponsiveLayout(
-///   watch: const WatchLayout(),
 ///   mobile: const MobileLayout(),
-///   tablet: const TabletLayout(),
-///   largeScreen: const DesktopLayout(),
+///   tablet: const TabletLayout(), // also used for large screens
 /// )
 /// ```
+///
+/// All widgets are created up front. If they are expensive to build, use
+/// `DeviceTypeSwitcher`, which takes builders.
 class ResponsiveLayout extends StatelessWidget {
   /// Creates a [ResponsiveLayout].
   const ResponsiveLayout({
+    required this.mobile,
     this.watch,
-    this.mobile,
     this.tablet,
     this.largeScreen,
-    this.fallback = const SizedBox.shrink(),
     super.key,
   });
 
-  /// Widget for watch devices.
+  /// Widget for watch devices. Falls back to [mobile].
   final Widget? watch;
 
-  /// Widget for mobile devices.
-  final Widget? mobile;
+  /// Widget for mobile devices, and the final fallback.
+  final Widget mobile;
 
-  /// Widget for tablet devices.
+  /// Widget for tablet devices. Falls back to [mobile].
   final Widget? tablet;
 
-  /// Widget for large-screen devices.
+  /// Widget for large screens. Falls back to [tablet], then [mobile].
   final Widget? largeScreen;
-
-  /// Widget used when no matching widget is provided.
-  final Widget fallback;
 
   @override
   Widget build(BuildContext context) {
-    final type = DeviceBreakpoints.deviceTypeOf(context);
-    final resolved = switch (type) {
-      DeviceTypeWatch() => watch,
-      DeviceTypeMobile() => mobile,
-      DeviceTypeTablet() => tablet,
-      DeviceTypeLargeScreen() => largeScreen,
-    };
-    return resolved ?? fallback;
+    return DeviceBreakpoints.deviceTypeOf(context).select(
+      mobile: mobile,
+      watch: watch,
+      tablet: tablet,
+      largeScreen: largeScreen,
+    );
   }
 }

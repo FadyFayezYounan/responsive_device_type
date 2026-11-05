@@ -7,23 +7,23 @@ void main() {
     test('default values', () {
       const breakpoints = DeviceBreakpointsData();
 
-      expect(breakpoints.watchMaxShortestSide, 300);
-      expect(breakpoints.mobileMaxShortestSide, 600);
-      expect(breakpoints.tabletMaxShortestSide, 1024);
+      expect(breakpoints.watchMax, 300);
+      expect(breakpoints.mobileMax, 600);
+      expect(breakpoints.tabletMax, 1024);
       expect(breakpoints.strategy, isA<StandardStrategy>());
     });
 
     test('custom values', () {
       const breakpoints = DeviceBreakpointsData(
-        watchMaxShortestSide: 280,
-        mobileMaxShortestSide: 640,
-        tabletMaxShortestSide: 1100,
+        watchMax: 280,
+        mobileMax: 640,
+        tabletMax: 1100,
         strategy: StrictTabletStrategy(),
       );
 
-      expect(breakpoints.watchMaxShortestSide, 280);
-      expect(breakpoints.mobileMaxShortestSide, 640);
-      expect(breakpoints.tabletMaxShortestSide, 1100);
+      expect(breakpoints.watchMax, 280);
+      expect(breakpoints.mobileMax, 640);
+      expect(breakpoints.tabletMax, 1100);
       expect(breakpoints.strategy, isA<StrictTabletStrategy>());
     });
   });
@@ -32,9 +32,9 @@ void main() {
     test('has correct default values', () {
       const breakpoints = DeviceBreakpointsData.defaults();
 
-      expect(breakpoints.watchMaxShortestSide, 300);
-      expect(breakpoints.mobileMaxShortestSide, 600);
-      expect(breakpoints.tabletMaxShortestSide, 1024);
+      expect(breakpoints.watchMax, 300);
+      expect(breakpoints.mobileMax, 600);
+      expect(breakpoints.tabletMax, 1024);
       expect(breakpoints.strategy, isA<StandardStrategy>());
     });
 
@@ -50,35 +50,64 @@ void main() {
     test('has Material 3 values', () {
       const breakpoints = DeviceBreakpointsData.material3();
 
-      expect(breakpoints.watchMaxShortestSide, 300);
-      expect(breakpoints.mobileMaxShortestSide, 600);
-      expect(breakpoints.tabletMaxShortestSide, 840);
-      expect(breakpoints.strategy, isA<StandardStrategy>());
+      expect(breakpoints.watchMax, 300);
+      expect(breakpoints.mobileMax, 600);
+      expect(breakpoints.tabletMax, 840);
+      expect(breakpoints.strategy, isA<WindowWidthStrategy>());
+    });
+
+    test('classifies by width like Material 3 size classes', () {
+      const breakpoints = DeviceBreakpointsData.material3();
+
+      // Compact
+      expect(
+        breakpoints.classify(const Size(599, 900)),
+        isA<DeviceTypeMobile>(),
+      );
+      // Medium
+      expect(
+        breakpoints.classify(const Size(600, 300)),
+        isA<DeviceTypeTablet>(),
+      );
+      expect(
+        breakpoints.classify(const Size(839, 400)),
+        isA<DeviceTypeTablet>(),
+      );
+      // Expanded
+      expect(
+        breakpoints.classify(const Size(840, 400)),
+        isA<DeviceTypeLargeScreen>(),
+      );
+      // A phone in landscape is no longer compact.
+      expect(
+        breakpoints.classify(const Size(852, 393)),
+        isA<DeviceTypeLargeScreen>(),
+      );
     });
   });
 
   group('DeviceBreakpoints assertions', () {
-    test('watchMaxShortestSide must be positive', () {
+    test('watchMax must be positive', () {
       expect(
-        () => DeviceBreakpointsData(watchMaxShortestSide: 0),
+        () => DeviceBreakpointsData(watchMax: 0),
         throwsA(isA<AssertionError>()),
       );
       expect(
-        () => DeviceBreakpointsData(watchMaxShortestSide: -1),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('mobileMaxShortestSide must be positive', () {
-      expect(
-        () => DeviceBreakpointsData(mobileMaxShortestSide: 0),
+        () => DeviceBreakpointsData(watchMax: -1),
         throwsA(isA<AssertionError>()),
       );
     });
 
-    test('tabletMaxShortestSide must be positive', () {
+    test('mobileMax must be positive', () {
       expect(
-        () => DeviceBreakpointsData(tabletMaxShortestSide: 0),
+        () => DeviceBreakpointsData(mobileMax: 0),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
+    test('tabletMax must be positive', () {
+      expect(
+        () => DeviceBreakpointsData(tabletMax: 0),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -86,29 +115,21 @@ void main() {
     test('values must be in ascending order', () {
       // watch >= mobile
       expect(
-        () => DeviceBreakpointsData(
-          watchMaxShortestSide: 600,
-        ),
+        () => DeviceBreakpointsData(watchMax: 600),
         throwsA(isA<AssertionError>()),
       );
       expect(
-        () => DeviceBreakpointsData(
-          watchMaxShortestSide: 700,
-        ),
+        () => DeviceBreakpointsData(watchMax: 700),
         throwsA(isA<AssertionError>()),
       );
 
       // mobile >= tablet
       expect(
-        () => DeviceBreakpointsData(
-          mobileMaxShortestSide: 1024,
-        ),
+        () => DeviceBreakpointsData(mobileMax: 1024),
         throwsA(isA<AssertionError>()),
       );
       expect(
-        () => DeviceBreakpointsData(
-          mobileMaxShortestSide: 1100,
-        ),
+        () => DeviceBreakpointsData(mobileMax: 1100),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -118,13 +139,13 @@ void main() {
     test('copies with new values', () {
       const original = DeviceBreakpointsData();
       final copied = original.copyWith(
-        mobileMaxShortestSide: 640,
+        mobileMax: 640,
         strategy: const StrictTabletStrategy(),
       );
 
-      expect(copied.watchMaxShortestSide, 300); // unchanged
-      expect(copied.mobileMaxShortestSide, 640); // changed
-      expect(copied.tabletMaxShortestSide, 1024); // unchanged
+      expect(copied.watchMax, 300); // unchanged
+      expect(copied.mobileMax, 640); // changed
+      expect(copied.tabletMax, 1024); // unchanged
       expect(copied.strategy, isA<StrictTabletStrategy>()); // changed
     });
 
@@ -138,14 +159,8 @@ void main() {
 
   group('DeviceBreakpoints equality', () {
     test('equal breakpoints are equal', () {
-      const a = DeviceBreakpointsData(
-        watchMaxShortestSide: 280,
-        mobileMaxShortestSide: 640,
-      );
-      const b = DeviceBreakpointsData(
-        watchMaxShortestSide: 280,
-        mobileMaxShortestSide: 640,
-      );
+      const a = DeviceBreakpointsData(watchMax: 280, mobileMax: 640);
+      const b = DeviceBreakpointsData(watchMax: 280, mobileMax: 640);
 
       expect(a, b);
       expect(a.hashCode, b.hashCode);
@@ -153,7 +168,7 @@ void main() {
 
     test('different breakpoints are not equal', () {
       const a = DeviceBreakpointsData();
-      const b = DeviceBreakpointsData(mobileMaxShortestSide: 640);
+      const b = DeviceBreakpointsData(mobileMax: 640);
 
       expect(a, isNot(b));
     });

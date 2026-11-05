@@ -5,14 +5,22 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 
 /// Shows or hides its [child] based on the current [DeviceType].
 ///
-/// Example:
+/// Every type is shown by default; turn types off with the `showOn*` flags,
+/// or use a named constructor to show on a single type.
+///
 /// ```dart
+/// // Hide on tablets only.
 /// DeviceTypeVisibility(
-///   showOnMobile: true,
 ///   showOnTablet: false,
 ///   child: const CompactToolbar(),
 /// )
+///
+/// // Large screens only.
+/// DeviceTypeVisibility.largeScreen(child: const Sidebar())
 /// ```
+///
+/// The [replacement] is shown instead when hidden. The [child] is removed
+/// from the tree, not just made invisible, so its state is lost.
 class DeviceTypeVisibility extends StatelessWidget {
   /// Creates a [DeviceTypeVisibility] widget.
   const DeviceTypeVisibility({
@@ -25,6 +33,7 @@ class DeviceTypeVisibility extends StatelessWidget {
     super.key,
   });
 
+  /// Shows [child] only on watch devices.
   const DeviceTypeVisibility.watch({
     required this.child,
     this.replacement = const SizedBox.shrink(),
@@ -35,6 +44,7 @@ class DeviceTypeVisibility extends StatelessWidget {
     super.key,
   });
 
+  /// Shows [child] only on mobile devices.
   const DeviceTypeVisibility.mobile({
     required this.child,
     this.replacement = const SizedBox.shrink(),
@@ -45,6 +55,7 @@ class DeviceTypeVisibility extends StatelessWidget {
     super.key,
   });
 
+  /// Shows [child] only on tablets.
   const DeviceTypeVisibility.tablet({
     required this.child,
     this.replacement = const SizedBox.shrink(),
@@ -55,6 +66,7 @@ class DeviceTypeVisibility extends StatelessWidget {
     super.key,
   });
 
+  /// Shows [child] only on large screens.
   const DeviceTypeVisibility.largeScreen({
     required this.child,
     this.replacement = const SizedBox.shrink(),

@@ -3,15 +3,13 @@ import 'package:flutter/widgets.dart';
 import 'package:responsive_device_type/src/core/scope.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 
-/// A widget that selects a builder based on the current [DeviceType].
+/// Calls the builder for the current [DeviceType], falling back mobile-first.
 ///
-/// This is a convenience wrapper around [DeviceBreakpoints.deviceTypeOf] and
-/// a `switch` on the device type.
+/// Like `ResponsiveLayout`, but only the selected builder runs, so unused
+/// layouts are never created.
 ///
-/// Example:
 /// ```dart
 /// DeviceTypeSwitcher(
-///   watch: (context) => const WatchLayout(),
 ///   mobile: (context) => const MobileLayout(),
 ///   tablet: (context) => const TabletLayout(),
 ///   largeScreen: (context) => const DesktopLayout(),
@@ -20,33 +18,33 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 class DeviceTypeSwitcher extends StatelessWidget {
   /// Creates a [DeviceTypeSwitcher].
   const DeviceTypeSwitcher({
-    required this.watch,
     required this.mobile,
-    required this.tablet,
-    required this.largeScreen,
+    this.watch,
+    this.tablet,
+    this.largeScreen,
     super.key,
   });
 
-  /// Builder for watch layouts.
-  final WidgetBuilder watch;
+  /// Builder for watch devices. Falls back to [mobile].
+  final WidgetBuilder? watch;
 
-  /// Builder for mobile layouts.
+  /// Builder for mobile devices, and the final fallback.
   final WidgetBuilder mobile;
 
-  /// Builder for tablet layouts.
-  final WidgetBuilder tablet;
+  /// Builder for tablet devices. Falls back to [mobile].
+  final WidgetBuilder? tablet;
 
-  /// Builder for large-screen layouts.
-  final WidgetBuilder largeScreen;
+  /// Builder for large screens. Falls back to [tablet], then [mobile].
+  final WidgetBuilder? largeScreen;
 
   @override
   Widget build(BuildContext context) {
-    final type = DeviceBreakpoints.deviceTypeOf(context);
-    return switch (type) {
-      DeviceTypeWatch() => watch(context),
-      DeviceTypeMobile() => mobile(context),
-      DeviceTypeTablet() => tablet(context),
-      DeviceTypeLargeScreen() => largeScreen(context),
-    };
+    final builder = DeviceBreakpoints.deviceTypeOf(context).select(
+      mobile: mobile,
+      watch: watch,
+      tablet: tablet,
+      largeScreen: largeScreen,
+    );
+    return builder(context);
   }
 }

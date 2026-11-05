@@ -1,17 +1,16 @@
-# Responsive Device Type Example
+# responsive_device_type example
 
-This example shows how to use `responsive_device_type` to drive layouts with
-`DeviceTypeBuilder` and app-wide breakpoints using `DeviceBreakpoints`.
+A showcase app for [`responsive_device_type`](https://pub.dev/packages/responsive_device_type).
 
-## What to try
+- Uses `DeviceBreakpointsData.material3()` (window-width classification).
+- Switches between bottom navigation (compact) and a navigation rail (expanded).
+- Shows tablet sub-sizes with exhaustive `switch` patterns.
+- On dual-screen devices and half-open foldables, `DualPaneLayout` shows the
+  showcase and the fold details on either side of the hinge.
 
-- Resize the window (desktop/web) or rotate your device.
-- Watch the navigation switch between a drawer/bottom bar and a rail.
-- See the grid change its column count based on the detected device type.
-
-## Run
+Run it on a phone, a tablet, a resizable desktop window, or an Android
+foldable emulator:
 
 ```bash
-flutter pub get
 flutter run
 ```

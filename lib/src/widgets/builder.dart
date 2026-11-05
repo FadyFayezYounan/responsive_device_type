@@ -7,7 +7,7 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 ///
 /// This widget automatically rebuilds when the device classification
 /// changes (e.g., on device rotation, window resize, or when the
-/// [DeviceBreakpoints] changes).
+/// nearest [DeviceBreakpoints] changes).
 ///
 /// ## Basic Usage
 ///
@@ -43,28 +43,26 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 /// )
 /// ```
 ///
-/// ## Custom Breakpoints
+/// ## Custom breakpoints
 ///
-/// Override scoped breakpoints for this builder:
+/// Wrap any ancestor with `DeviceBreakpoints`:
 ///
 /// ```dart
-/// DeviceTypeBuilder(
-///   breakpoints: const DeviceBreakpoints(
-///     mobileMaxShortestSide: 640,
+/// DeviceBreakpoints(
+///   breakpoints: const DeviceBreakpointsData(mobileMax: 640),
+///   child: DeviceTypeBuilder(
+///     builder: (context, type) => MyWidget(type: type),
 ///   ),
-///   builder: (context, type) {
-///     return MyWidget(type: type);
-///   },
 /// )
 /// ```
 ///
 /// See also:
 ///
 ///  * [DeviceType], the classification result.
-///  * [DeviceBreakpointsScope], to customize breakpoints per-subtree.
-///  * [DeviceTypeSwitcher], for mapping device types to builders.
-///  * [DeviceTypeVisibility], to show or hide content by device type.
-///  * [ResponsiveLayout], to provide per-device widgets.
+///  * [DeviceBreakpoints], to customize breakpoints per subtree.
+///  * `DeviceTypeSwitcher`, for mapping device types to builders.
+///  * `DeviceTypeVisibility`, to show or hide content by device type.
+///  * `ResponsiveLayout`, to provide per-device widgets.
 class DeviceTypeBuilder extends StatelessWidget {
   /// Creates a [DeviceTypeBuilder].
   ///
@@ -74,7 +72,7 @@ class DeviceTypeBuilder extends StatelessWidget {
 
   /// Called to build the child widget.
   ///
-  /// The [type] parameter contains the current device classification.
+  /// The second argument is the current [DeviceType].
   final Widget Function(BuildContext context, DeviceType type) builder;
 
   @override

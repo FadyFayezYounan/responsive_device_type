@@ -1,77 +1,77 @@
 import 'dart:ui' show Size;
 
-import 'package:flutter/widgets.dart' show MediaQueryData;
+import 'package:flutter/foundation.dart' show immutable, protected;
 
 import 'package:responsive_device_type/src/models/breakpoints.dart';
 import 'package:responsive_device_type/src/models/device_type.dart';
 
-/// Base class for device classification strategies.
+/// Decides which dimension of the screen is compared against the
+/// [DeviceBreakpointsData] thresholds.
 ///
-/// Classification strategies define how a device's screen dimensions are
-/// mapped to a [DeviceType]. Different strategies can produce different
-/// results for the same screen size, allowing for customization based on
-/// application requirements.
+/// ## Built-in strategies
 ///
-/// ## Built-in Strategies
+/// * `StandardStrategy` (default): compares `size.shortestSide`. The result
+///   does not change when the device rotates, so it answers "what kind of
+///   device is this?". A phone in landscape stays mobile.
+/// * `WindowWidthStrategy`: compares `size.width`, like Material 3 window
+///   size classes. The result follows the available horizontal space, so a
+///   phone in landscape or a narrow desktop window adapts.
+/// * `StrictTabletStrategy`: like `StandardStrategy`, but wide landscape
+///   windows (laptops, desktop browsers) become large screens instead of
+///   tablets.
 ///
-/// The package provides two built-in strategies:
+/// ## Custom strategies
 ///
-/// * [StandardStrategy]: Simple classification based only on `shortestSide`.
-///   Provides consistent results regardless of orientation.
-///
-/// * [StrictTabletStrategy]: Enhanced classification that considers orientation
-///   and uses additional heuristics to distinguish tablets from desktops.
-///
-/// ## Custom Strategies
-///
-/// You can create custom strategies by extending this class:
+/// Implement [classify]. [classifyExtent] applies the standard threshold
+/// ladder to a single number, so most strategies only choose which number:
 ///
 /// ```dart
-/// class MyCustomStrategy extends ClassificationStrategy {
-///   const MyCustomStrategy();
+/// class LongestSideStrategy extends ClassificationStrategy {
+///   const LongestSideStrategy();
 ///
 ///   @override
-///   DeviceType classify(Size size, DeviceBreakpoints breakpoints) {
-///     // Custom classification logic
-///   }
+///   DeviceType classify(Size size, DeviceBreakpointsData breakpoints) =>
+///       classifyExtent(size.longestSide, breakpoints);
 /// }
 /// ```
 ///
-/// See also:
-///
-///  * [StandardStrategy], the default classification strategy.
-///  * [StrictTabletStrategy], an alternative with stricter tablet detection.
-///  * [DeviceBreakpointsData], which holds the threshold values used by strategies.
+/// Strategies are compared with `==` when the scope rebuilds, so give
+/// strategies with fields a value-based `==` and `hashCode`.
+@immutable
 abstract class ClassificationStrategy {
   /// Creates a classification strategy.
   const ClassificationStrategy();
 
-  /// Classifies a device based on screen [size] using the given [breakpoints].
-  ///
-  /// The [size] parameter represents the screen dimensions. Classification
-  /// typically uses `size.shortestSide` for orientation-independent results.
-  ///
-  /// Returns a [DeviceType] representing the device classification.
+  /// Classifies a screen of the given [size] using [breakpoints].
   DeviceType classify(Size size, DeviceBreakpointsData breakpoints);
 
-  /// Classifies a device based on [width] using the given [breakpoints].
+  /// Classifies a single [width] using [breakpoints].
   ///
-  /// Unlike [classify] which uses the shortest side of a [Size],
-  /// this method uses the provided [width] directly for classification.
-  ///
-  /// Returns a [DeviceType] representing the device classification.
-  DeviceType classifyFromWidth(double width, DeviceBreakpointsData breakpoints);
-
-  /// Classifies a device based on [MediaQueryData] using the given [breakpoints].
-  ///
-  /// This is a convenience method that extracts the size from [mediaQuery]
-  /// and delegates to [classify].
-  ///
-  /// Returns a [DeviceType] representing the device classification.
-  DeviceType classifyFromMediaQuery(
-    MediaQueryData mediaQuery,
+  /// The default implementation applies [classifyExtent] to [width]
+  /// directly. Useful with `LayoutBuilder` constraints.
+  DeviceType classifyFromWidth(
+    double width,
     DeviceBreakpointsData breakpoints,
-  ) {
-    return classify(mediaQuery.size, breakpoints);
+  ) => classifyExtent(width, breakpoints);
+
+  /// Applies the threshold ladder (watch → mobile → tablet → large screen)
+  /// to a single [extent] in logical pixels.
+  @protected
+  DeviceType classifyExtent(double extent, DeviceBreakpointsData breakpoints) {
+    if (extent < breakpoints.watchMax) return const DeviceType.watch();
+    if (extent < breakpoints.mobileMax) return const DeviceType.mobile();
+    if (extent < breakpoints.tabletMax) {
+      return DeviceType.tablet(
+        size: breakpoints.tabletBreakpoints.classify(extent),
+      );
+    }
+    return const DeviceType.largeScreen();
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other.runtimeType == runtimeType;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
 }

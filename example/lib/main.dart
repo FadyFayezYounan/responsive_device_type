@@ -29,6 +29,32 @@ class ResponsiveShowcasePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On a dual-screen device, or a foldable that is half-open, show the
+    // showcase on one side of the hinge and fold details on the other.
+    // Panes do not see the hinge, so read the fold outside DualPaneLayout.
+    final fold = context.foldInfo;
+    return DualPaneLayout(
+      start: Scaffold(
+        appBar: AppBar(title: const Text('Responsive Device Type')),
+        body: _ShowcaseBody(deviceType: context.deviceType),
+      ),
+      end: Scaffold(
+        appBar: AppBar(title: const Text('Fold')),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: _FoldCard(fold: fold),
+        ),
+      ),
+      single: const _SinglePane(),
+    );
+  }
+}
+
+class _SinglePane extends StatelessWidget {
+  const _SinglePane();
+
+  @override
+  Widget build(BuildContext context) {
     return DeviceTypeBuilder(
       builder: (context, deviceType) {
         final isCompact = deviceType.isCompact;
@@ -88,6 +114,10 @@ class _ShowcaseBody extends StatelessWidget {
         const _SectionTitle(title: 'Pattern matching'),
         const SizedBox(height: 12),
         _PatternCard(deviceType: deviceType),
+        const SizedBox(height: 24),
+        const _SectionTitle(title: 'Foldables'),
+        const SizedBox(height: 12),
+        const _FoldCard(),
       ],
     );
   }
@@ -106,10 +136,11 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeFromContext = DeviceBreakpoints.deviceTypeOf(context);
-    final tabletSizeInfo = deviceType is DeviceTypeTablet
-        ? (deviceType as DeviceTypeTablet).size.name
-        : 'N/A';
+    final typeFromContext = context.deviceType;
+    final tabletSizeInfo = switch (deviceType) {
+      DeviceTypeTablet(:final size) => size.name,
+      _ => 'N/A',
+    };
 
     return Card(
       elevation: 0,
@@ -147,9 +178,9 @@ class _HeroCard extends StatelessWidget {
                 _InfoChip(
                   label: 'breakpoints',
                   value:
-                      '<${breakpoints.watchMaxShortestSide.toInt()} '
-                      '/ <${breakpoints.mobileMaxShortestSide.toInt()} '
-                      '/ <${breakpoints.tabletMaxShortestSide.toInt()}',
+                      '<${breakpoints.watchMax.toInt()} '
+                      '/ <${breakpoints.mobileMax.toInt()} '
+                      '/ <${breakpoints.tabletMax.toInt()}',
                 ),
               ],
             ),
@@ -176,7 +207,7 @@ class _PatternCard extends StatelessWidget {
       DeviceTypeTablet(size: TabletSizeMedium()) =>
         'Medium tablet layout: 3 columns, balanced for standard tablets.',
       DeviceTypeTablet(size: TabletSizeLarge()) =>
-        'Large tablet layout: 4 columns, optimized for iPad Pro-sized devices.',
+        'Large tablet layout: 4 columns for the widest tablet windows.',
       DeviceTypeLargeScreen() =>
         'Large screen layout: show persistent navigation and density.',
     };
@@ -189,6 +220,48 @@ class _PatternCard extends StatelessWidget {
           children: [
             Icon(
               Icons.auto_awesome,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FoldCard extends StatelessWidget {
+  const _FoldCard({this.fold});
+
+  /// Fold to describe. Defaults to the fold of the current window.
+  final FoldInfo? fold;
+
+  @override
+  Widget build(BuildContext context) {
+    final fold = this.fold ?? context.foldInfo;
+    final message = !fold.hasFold
+        ? 'No fold or hinge reported in this window. On Android foldables '
+              'and dual-screen devices, the hinge and posture appear here.'
+        : 'Posture: ${fold.posture.name}\n'
+              'Hinge axis: ${fold.hingeAxis?.name ?? 'unknown'}\n'
+              'Separating: ${fold.isSeparating}\n'
+              'Tabletop: ${fold.isTabletop} · Book: ${fold.isBook}';
+
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.devices_fold,
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 12),
@@ -361,12 +434,20 @@ class _FeatureCard extends StatelessWidget {
           children: [
             Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            Text(body, style: Theme.of(context).textTheme.bodyMedium),
+            Flexible(
+              child: Text(
+                body,
+                overflow: TextOverflow.fade,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
           ],
         ),
       ),
@@ -392,8 +473,15 @@ const _featureCards = [
     body: 'Use isCompact / isExpanded for coarse layout decisions.',
   ),
   _FeatureCard(
-    title: 'Orientation-proof',
-    body: 'Uses shortestSide so rotations do not flip categories.',
+    title: 'Strategies',
+    body:
+        'This demo uses Material 3 (window width). The default strategy uses '
+        'the shortest side, so rotation does not change the type.',
+  ),
+  _FeatureCard(
+    title: 'Foldables',
+    body:
+        'FoldInfo reports hinge and posture; DualPaneLayout splits around it.',
   ),
   _FeatureCard(
     title: 'Zero deps',

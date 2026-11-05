@@ -37,9 +37,12 @@ import 'package:responsive_device_type/src/models/tablet_size.dart';
 /// // From Size
 /// final type = DeviceType.fromSize(Size(393, 852));
 ///
-/// // From MediaQueryData
-/// final type = DeviceType.fromMediaQuery(MediaQuery.of(context));
+/// // From a single width (for example LayoutBuilder constraints)
+/// final type = DeviceType.fromWidth(393);
 /// ```
+///
+/// Inside widgets, prefer `context.deviceType`, which honours the nearest
+/// `DeviceBreakpoints` and rebuilds when the screen size changes.
 ///
 /// ## Convenience Getters
 ///
@@ -57,7 +60,7 @@ import 'package:responsive_device_type/src/models/tablet_size.dart';
 /// See also:
 ///
 ///  * [DeviceBreakpointsData], which defines the threshold values for classification.
-///  * [DeviceBreakpointsScope], which provides breakpoints to a widget subtree.
+///  * `DeviceBreakpoints`, which provides breakpoints to a widget subtree.
 @immutable
 sealed class DeviceType {
   const DeviceType._();
@@ -71,12 +74,12 @@ sealed class DeviceType {
   /// Creates a [DeviceType] from the given screen [size].
   ///
   /// Uses the provided [breakpoints] for classification thresholds.
-  /// If not specified, defaults to [DeviceBreakpoints.defaults].
+  /// If not specified, defaults to [DeviceBreakpointsData.defaults].
   ///
   /// ```dart
   /// final type = DeviceType.fromSize(
-  ///   Size(393, 852),
-  ///   breakpoints: DeviceBreakpoints(mobileMaxShortestSide: 640),
+  ///   const Size(393, 852),
+  ///   breakpoints: const DeviceBreakpointsData(mobileMax: 640),
   /// );
   /// ```
   factory DeviceType.fromSize(
@@ -92,7 +95,7 @@ sealed class DeviceType {
   /// this method uses the provided [width] directly.
   ///
   /// Uses the provided [breakpoints] for classification thresholds.
-  /// If not specified, defaults to [DeviceBreakpoints.defaults].
+  /// If not specified, defaults to [DeviceBreakpointsData.defaults].
   ///
   /// ```dart
   /// final type = DeviceType.fromWidth(393);
@@ -128,17 +131,47 @@ sealed class DeviceType {
   /// or drawers, and can display master-detail views.
   bool get isExpanded => isTablet || isLargeScreen;
 
-  /// Returns `true` if this device is handheld (watch or mobile).
-  bool get isHandheld => isWatch || isMobile;
+  /// Position of this type in the order watch < mobile < tablet <
+  /// largeScreen. Tablet sizes are not considered.
+  int get _rank => switch (this) {
+    DeviceTypeWatch() => 0,
+    DeviceTypeMobile() => 1,
+    DeviceTypeTablet() => 2,
+    DeviceTypeLargeScreen() => 3,
+  };
 
-  /// Returns `true` if this device has limited space (watch or mobile).
-  bool get hasLimitedSpace => isWatch || isMobile;
+  /// Whether this type is [other] or larger, ignoring tablet sizes.
+  ///
+  /// ```dart
+  /// if (context.deviceType.isAtLeast(const DeviceType.tablet())) {
+  ///   // tablet or large screen
+  /// }
+  /// ```
+  bool isAtLeast(DeviceType other) => _rank >= other._rank;
 
-  /// Returns `true` if this device typically supports hover interactions.
-  bool get supportsHover => isLargeScreen;
+  /// Whether this type is [other] or smaller, ignoring tablet sizes.
+  bool isAtMost(DeviceType other) => _rank <= other._rank;
 
-  /// Returns `true` if this device prefers touch input.
-  bool get prefersTouchInput => !isLargeScreen;
+  /// Picks a value for this type, falling back mobile-first.
+  ///
+  /// Missing values fall back to the next smaller type that has one:
+  /// `largeScreen → tablet → mobile` and `watch → mobile`.
+  ///
+  /// ```dart
+  /// final columns = context.deviceType.select(
+  ///   mobile: 1,
+  ///   tablet: 2,
+  ///   largeScreen: 4,
+  /// );
+  /// ```
+  T select<T>({required T mobile, T? watch, T? tablet, T? largeScreen}) {
+    return switch (this) {
+      DeviceTypeWatch() => watch ?? mobile,
+      DeviceTypeMobile() => mobile,
+      DeviceTypeTablet() => tablet ?? mobile,
+      DeviceTypeLargeScreen() => largeScreen ?? tablet ?? mobile,
+    };
+  }
 
   /// Returns the name of this device type as a lowercase string.
   ///
@@ -153,8 +186,7 @@ sealed class DeviceType {
 
   /// Pattern matching method that requires handling all device types.
   ///
-  /// The [tablet] callback receives the [TabletSize?] for further
-  /// tablet size classification.
+  /// The [tablet] callback receives the [TabletSize] of the tablet.
   ///
   /// ```dart
   /// final layout = deviceType.when(
@@ -173,8 +205,7 @@ sealed class DeviceType {
 
   /// Pattern matching method with optional handlers and a fallback.
   ///
-  /// The [tablet] callback receives the [TabletSize?] for further
-  /// tablet size classification.
+  /// The [tablet] callback receives the [TabletSize] of the tablet.
   ///
   /// ```dart
   /// final layout = deviceType.maybeWhen(
@@ -193,8 +224,7 @@ sealed class DeviceType {
 
   /// Pattern matching method that returns null if no handler matches.
   ///
-  /// The [tablet] callback receives the [TabletSize?] for further
-  /// tablet size classification.
+  /// The [tablet] callback receives the [TabletSize] of the tablet.
   ///
   /// ```dart
   /// final layout = deviceType.whenOrNull(
@@ -260,11 +290,11 @@ sealed class DeviceType {
 
 /// Very small screens, typically smartwatches.
 ///
-/// Default threshold: `shortestSide < 300`
+/// Default threshold: `< 300`
 ///
-/// Examples of watch devices:
-/// * Apple Watch: 162x197 (38mm), 184x224 (44mm)
-/// * Galaxy Watch: 360x360
+/// Examples (logical size):
+/// * Apple Watch: 162x197 (38mm) to 205x251 (Ultra)
+/// * Wear OS watches: roughly 190x190 to 230x230
 final class DeviceTypeWatch extends DeviceType {
   /// Creates a [DeviceTypeWatch] instance.
   const DeviceTypeWatch() : super._();
@@ -346,12 +376,13 @@ final class DeviceTypeWatch extends DeviceType {
 
 /// Phones and small handheld devices.
 ///
-/// Default threshold: `300 <= shortestSide < 600`
+/// Default threshold: `300 – 599`
 ///
-/// Examples of mobile devices:
-/// * iPhone 14 Pro: 393x852
-/// * Pixel 7: 412x915
-/// * Galaxy S23: 360x780
+/// Examples (logical size):
+/// * iPhone 15: 393x852
+/// * Pixel 8: 412x915
+/// * Galaxy S24: 360x780
+/// * Cover screens of book-style foldables (folded)
 final class DeviceTypeMobile extends DeviceType {
   /// Creates a [DeviceTypeMobile] instance.
   const DeviceTypeMobile() : super._();
@@ -433,17 +464,16 @@ final class DeviceTypeMobile extends DeviceType {
 
 /// Tablets and medium-sized screens.
 ///
-/// Default threshold: `600 <= shortestSide < 1024`
+/// Default threshold: `600 – 1023`
 ///
-/// Tablet sizes:
-/// * Small: < 720 (e.g., iPad Mini: 744x1133)
-/// * Medium: 720-899 (e.g., iPad: 810x1080)
-/// * Large: >= 900 (e.g., iPad Pro 11": 834x1194)
+/// Tablet sizes with [TabletBreakpoints.defaults]:
+/// * Small: `< 720` (7" Android tablets, unfolded foldables)
+/// * Medium: `720 – 899` (iPad mini 744, iPad 820, iPad Pro 11" 834)
+/// * Large: `>= 900`
 ///
-/// Examples of tablet devices:
-/// * iPad Pro 11": 834x1194
-/// * iPad Mini: 744x1133
-/// * Galaxy Tab S8: 753x1205
+/// Note on equality: `==` compares [size] too, so
+/// `type == const DeviceType.tablet()` only matches medium tablets.
+/// Use `type is DeviceTypeTablet` or [isTablet] to match any tablet.
 final class DeviceTypeTablet extends DeviceType {
   /// Creates a [DeviceTypeTablet] instance with [size] classification.
   ///
@@ -537,18 +567,20 @@ final class DeviceTypeTablet extends DeviceType {
   int get hashCode => Object.hash(name, size);
 
   @override
-  String toString() =>
-      'DeviceType.tablet(${size.name})';
+  String toString() => 'DeviceType.tablet(${size.name})';
 }
 
 /// Desktops, laptops, TVs, and other large displays.
 ///
-/// Default threshold: `shortestSide >= 1024`
+/// Default threshold: `>= 1024`
 ///
-/// Examples of large screen devices:
-/// * MacBook Pro 14": 1512x982 (scaled)
+/// Examples (logical size):
+/// * iPad Pro 12.9"/13": 1024x1366, 1032x1376
 /// * Desktop 1080p: 1920x1080
-/// * 4K Display: 3840x2160
+///
+/// With the default `StandardStrategy`, laptops with a short height
+/// (1366x768, MacBook 1512x982) are tablets. Use `StrictTabletStrategy` or
+/// `WindowWidthStrategy` to treat them as large screens.
 final class DeviceTypeLargeScreen extends DeviceType {
   /// Creates a [DeviceTypeLargeScreen] instance.
   const DeviceTypeLargeScreen() : super._();

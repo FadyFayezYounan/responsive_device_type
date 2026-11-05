@@ -5,9 +5,7 @@ import 'package:responsive_device_type/responsive_device_type.dart';
 void main() {
   group('DeviceBreakpoints', () {
     testWidgets('provides breakpoints to descendants', (tester) async {
-      const customBreakpoints = DeviceBreakpointsData(
-        mobileMaxShortestSide: 640,
-      );
+      const customBreakpoints = DeviceBreakpointsData(mobileMax: 640);
 
       DeviceBreakpointsData? capturedBreakpoints;
 
@@ -69,12 +67,12 @@ void main() {
 
     testWidgets('nested scopes use nearest ancestor', (tester) async {
       const outerBreakpoints = DeviceBreakpointsData(
-        mobileMaxShortestSide: 500,
-        tabletMaxShortestSide: 900,
+        mobileMax: 500,
+        tabletMax: 900,
       );
       const innerBreakpoints = DeviceBreakpointsData(
-        mobileMaxShortestSide: 640,
-        tabletMaxShortestSide: 1100,
+        mobileMax: 640,
+        tabletMax: 1100,
       );
 
       DeviceBreakpointsData? outerCaptured;
@@ -154,10 +152,8 @@ void main() {
     testWidgets('uses scoped breakpoints', (tester) async {
       DeviceType? capturedType;
       // 620x900 would be tablet with defaults (shortestSide = 620 >= 600)
-      // But mobile with custom breakpoints (mobileMaxShortestSide = 700)
-      const customBreakpoints = DeviceBreakpointsData(
-        mobileMaxShortestSide: 700,
-      );
+      // But mobile with custom breakpoints (mobileMax = 700)
+      const customBreakpoints = DeviceBreakpointsData(mobileMax: 700);
 
       await tester.pumpWidget(
         MediaQuery(

@@ -6,205 +6,135 @@ import 'package:responsive_device_type/src/models/device_type.dart';
 import 'package:responsive_device_type/src/models/tablet_size.dart';
 import 'package:responsive_device_type/src/strategies/classification_strategy.dart';
 import 'package:responsive_device_type/src/strategies/standard_strategy.dart';
+import 'package:responsive_device_type/src/strategies/window_width_strategy.dart';
 
-/// Defines threshold values for classifying devices into different types.
+/// Thresholds used to classify a screen into a [DeviceType].
 ///
-/// Breakpoints determine where the boundaries lie between device categories.
-/// The classification uses `shortestSide` of the screen, which provides
-/// consistent results regardless of device orientation.
+/// Every threshold is an exclusive upper bound in logical pixels. Which
+/// dimension is compared (shortest side, width, ...) is decided by
+/// [strategy].
 ///
-/// ## Default Breakpoints
+/// ## Defaults (with [StandardStrategy], shortest side)
 ///
-/// | Device Type   | Shortest Side Range  | Example Devices              |
-/// |---------------|----------------------|------------------------------|
-/// | Watch         | < 300                | Apple Watch, Galaxy Watch    |
-/// | Mobile        | 300 - 599            | iPhone, Pixel, Galaxy        |
-/// | Tablet        | 600 - 1023           | iPad, Galaxy Tab             |
-/// | LargeScreen   | >= 1024              | Desktop, Laptop, TV          |
+/// | Device type   | Range         | Examples (dp)                              |
+/// |---------------|---------------|--------------------------------------------|
+/// | Watch         | < 300         | Apple Watch (~162–205), Wear OS (~190–230) |
+/// | Mobile        | 300 – 599     | iPhone (375–440), Pixel (412), foldable cover screens |
+/// | Tablet        | 600 – 1023    | iPad mini/Air/Pro 11", unfolded foldables  |
+/// | LargeScreen   | >= 1024       | iPad Pro 12.9"/13", 1080p+ desktop         |
 ///
-/// ## Custom Breakpoints
-///
-/// You can customize breakpoints for your application:
-///
-/// ```dart
-/// const customBreakpoints = DeviceBreakpoints(
-///   watchMaxShortestSide: 280,
-///   mobileMaxShortestSide: 640,
-///   tabletMaxShortestSide: 1100,
-/// );
-/// ```
-///
-/// ## Classification Strategies
-///
-/// Breakpoints work together with [ClassificationStrategy] to determine
-/// device types. You can customize the strategy:
+/// ## Custom breakpoints
 ///
 /// ```dart
 /// const breakpoints = DeviceBreakpointsData(
-///   strategy: StrictTabletStrategy(),
+///   mobileMax: 640,
+///   tabletMax: 1100,
 /// );
 /// ```
 ///
 /// See also:
 ///
-///  * [DeviceBreakpointsScope], which provides breakpoints to a widget subtree.
-///  * [ClassificationStrategy], which defines how breakpoints are applied.
-///  * [StandardStrategy], the default classification strategy.
-///  * [StrictTabletStrategy], an alternative with stricter tablet detection.
+///  * `DeviceBreakpoints`, which provides these values to a widget subtree.
+///  * [ClassificationStrategy], which decides which dimension is compared.
+///  * [TabletBreakpoints], which splits tablets into small/medium/large.
 @immutable
 final class DeviceBreakpointsData with Diagnosticable {
-  /// Creates breakpoints with the specified thresholds.
+  /// Creates breakpoints with the given thresholds.
   ///
-  /// All threshold values must be positive and in ascending order:
-  /// `watchMaxShortestSide < mobileMaxShortestSide < tabletMaxShortestSide`
-  ///
-  /// The [strategy] determines how these thresholds are applied to classify
-  /// devices. Defaults to [StandardStrategy].
-  ///
-  /// The [tabletBreakpoints] parameter defines the size thresholds for
-  /// classifying tablets into small, medium, and large categories.
+  /// All thresholds must be positive and ascending:
+  /// `watchMax < mobileMax < tabletMax`.
   const DeviceBreakpointsData({
-    this.watchMaxShortestSide = 300,
-    this.mobileMaxShortestSide = 600,
-    this.tabletMaxShortestSide = 1024,
+    this.watchMax = 300,
+    this.mobileMax = 600,
+    this.tabletMax = 1024,
     this.tabletBreakpoints = const TabletBreakpoints.defaults(),
     this.strategy = const StandardStrategy(),
-  }) : assert(
-         watchMaxShortestSide > 0,
-         'watchMaxShortestSide must be positive',
-       ),
-       assert(
-         mobileMaxShortestSide > 0,
-         'mobileMaxShortestSide must be positive',
-       ),
-       assert(
-         tabletMaxShortestSide > 0,
-         'tabletMaxShortestSide must be positive',
-       ),
-       assert(
-         watchMaxShortestSide < mobileMaxShortestSide,
-         'watchMaxShortestSide must be less than mobileMaxShortestSide',
-       ),
-       assert(
-         mobileMaxShortestSide < tabletMaxShortestSide,
-         'mobileMaxShortestSide must be less than tabletMaxShortestSide',
-       );
+  }) : assert(watchMax > 0, 'watchMax must be positive'),
+       assert(watchMax < mobileMax, 'watchMax must be less than mobileMax'),
+       assert(mobileMax < tabletMax, 'mobileMax must be less than tabletMax');
 
-  /// Creates breakpoints with default values.
-  ///
-  /// Equivalent to `DeviceBreakpoints()` but explicitly named for clarity.
-  ///
-  /// Default values:
-  /// * Watch: shortestSide < 300
-  /// * Mobile: shortestSide < 600
-  /// * Tablet: shortestSide < 1024
-  /// * LargeScreen: shortestSide >= 1024
+  /// The default breakpoints. Same as `DeviceBreakpointsData()`.
   const DeviceBreakpointsData.defaults()
-    : watchMaxShortestSide = 300,
-      mobileMaxShortestSide = 600,
-      tabletMaxShortestSide = 1024,
+    : watchMax = 300,
+      mobileMax = 600,
+      tabletMax = 1024,
       tabletBreakpoints = const TabletBreakpoints.defaults(),
       strategy = const StandardStrategy();
 
-  /// Creates breakpoints aligned with Material Design 3 guidelines.
+  /// Breakpoints matching Material 3
+  /// [window size classes](https://m3.material.io/foundations/layout/applying-layout/window-size-classes).
   ///
-  /// Material 3 defines window size classes:
-  /// * Compact: width < 600dp (maps to Mobile)
-  /// * Medium: 600dp <= width < 840dp (maps to Tablet)
-  /// * Expanded: width >= 840dp (maps to LargeScreen)
+  /// Uses [WindowWidthStrategy], because Material 3 classifies by window
+  /// **width**:
   ///
-  /// Note: Material 3 doesn't define a watch category, so we use 300dp.
+  /// | Material 3 class          | Width       | [DeviceType]  |
+  /// |---------------------------|-------------|---------------|
+  /// | Compact                   | < 600       | mobile        |
+  /// | Medium                    | 600 – 839   | tablet        |
+  /// | Expanded, Large, XL       | >= 840      | largeScreen   |
   ///
-  /// See: https://m3.material.io/foundations/layout/applying-layout/window-size-classes
+  /// Material 3 has no watch class; widths below 300 are reported as watch.
   const DeviceBreakpointsData.material3()
-    : watchMaxShortestSide = 300,
-      mobileMaxShortestSide = 600,
-      tabletMaxShortestSide = 840,
+    : watchMax = 300,
+      mobileMax = 600,
+      tabletMax = 840,
       tabletBreakpoints = const TabletBreakpoints.compact(),
-      strategy = const StandardStrategy();
+      strategy = const WindowWidthStrategy();
 
-  /// Maximum shortest side for watch devices.
-  ///
-  /// Devices with `shortestSide < watchMaxShortestSide` are classified as
-  /// [DeviceTypeWatch].
-  ///
-  /// Default: 300
-  final double watchMaxShortestSide;
+  /// Upper bound (exclusive) for [DeviceTypeWatch]. Default: 300.
+  final double watchMax;
 
-  /// Maximum shortest side for mobile devices.
-  ///
-  /// Devices with `shortestSide >= watchMaxShortestSide` and
-  /// `shortestSide < mobileMaxShortestSide` are classified as [DeviceTypeMobile].
-  ///
-  /// Default: 600 (Material Design compact breakpoint)
-  final double mobileMaxShortestSide;
+  /// Upper bound (exclusive) for [DeviceTypeMobile]. Default: 600.
+  final double mobileMax;
 
-  /// Maximum shortest side for tablet devices.
-  ///
-  /// Devices with `shortestSide >= mobileMaxShortestSide` and
-  /// `shortestSide < tabletMaxShortestSide` are classified as [DeviceTypeTablet].
-  ///
-  /// Default: 1024
-  final double tabletMaxShortestSide;
+  /// Upper bound (exclusive) for [DeviceTypeTablet]. Anything at or above
+  /// this is [DeviceTypeLargeScreen]. Default: 1024.
+  final double tabletMax;
 
-  /// Breakpoints for tablet size classification.
-  ///
-  /// Use [TabletBreakpoints.defaults()], [TabletBreakpoints.compact()],
-  /// [TabletBreakpoints.wide()], or create custom breakpoints.
-  ///
-  /// Default: [TabletBreakpoints.defaults()]
+  /// Thresholds that split tablets into [TabletSize.small],
+  /// [TabletSize.medium], and [TabletSize.large].
   final TabletBreakpoints tabletBreakpoints;
 
-  /// The strategy used to classify devices.
+  /// Decides which dimension of the screen is compared to the thresholds.
   ///
-  /// Different strategies can produce different results for the same
-  /// screen dimensions. See [ClassificationStrategy] for details.
-  ///
-  /// Default: [StandardStrategy]
+  /// Default: [StandardStrategy] (shortest side).
   final ClassificationStrategy strategy;
 
-  /// Classifies a device based on the given screen [size].
-  ///
-  /// Delegates to the [strategy] to perform the classification.
+  /// Classifies a screen of the given [size] using [strategy].
   ///
   /// ```dart
-  /// final breakpoints = DeviceBreakpoints();
-  /// final type = breakpoints.classify(Size(393, 852)); // Mobile
+  /// const DeviceBreakpointsData().classify(const Size(393, 852)); // mobile
   /// ```
   DeviceType classify(Size size) => strategy.classify(size, this);
 
-  /// Classifies a device based on the given [width].
+  /// Classifies a single [width], ignoring height.
   ///
-  /// Unlike [classify] which uses the shortest side of a [Size],
-  /// this method uses the provided [width] directly.
+  /// Handy with `LayoutBuilder` to classify the space a widget actually has:
   ///
   /// ```dart
-  /// final breakpoints = DeviceBreakpoints();
-  /// final type = breakpoints.classifyFromWidth(393); // Mobile
+  /// LayoutBuilder(
+  ///   builder: (context, constraints) {
+  ///     final type = DeviceBreakpoints.of(context)
+  ///         .classifyFromWidth(constraints.maxWidth);
+  ///     // ...
+  ///   },
+  /// )
   /// ```
   DeviceType classifyFromWidth(double width) =>
       strategy.classifyFromWidth(width, this);
 
-  /// Creates a copy of these breakpoints with the given fields replaced.
-  ///
-  /// ```dart
-  /// final custom = DeviceBreakpoints().copyWith(
-  ///   mobileMaxShortestSide: 640,
-  /// );
-  /// ```
+  /// Returns a copy with the given fields replaced.
   DeviceBreakpointsData copyWith({
-    double? watchMaxShortestSide,
-    double? mobileMaxShortestSide,
-    double? tabletMaxShortestSide,
+    double? watchMax,
+    double? mobileMax,
+    double? tabletMax,
     TabletBreakpoints? tabletBreakpoints,
     ClassificationStrategy? strategy,
   }) {
     return DeviceBreakpointsData(
-      watchMaxShortestSide: watchMaxShortestSide ?? this.watchMaxShortestSide,
-      mobileMaxShortestSide:
-          mobileMaxShortestSide ?? this.mobileMaxShortestSide,
-      tabletMaxShortestSide:
-          tabletMaxShortestSide ?? this.tabletMaxShortestSide,
+      watchMax: watchMax ?? this.watchMax,
+      mobileMax: mobileMax ?? this.mobileMax,
+      tabletMax: tabletMax ?? this.tabletMax,
       tabletBreakpoints: tabletBreakpoints ?? this.tabletBreakpoints,
       strategy: strategy ?? this.strategy,
     );
@@ -214,29 +144,23 @@ final class DeviceBreakpointsData with Diagnosticable {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DeviceBreakpointsData &&
-          runtimeType == other.runtimeType &&
-          watchMaxShortestSide == other.watchMaxShortestSide &&
-          mobileMaxShortestSide == other.mobileMaxShortestSide &&
-          tabletMaxShortestSide == other.tabletMaxShortestSide &&
+          watchMax == other.watchMax &&
+          mobileMax == other.mobileMax &&
+          tabletMax == other.tabletMax &&
           tabletBreakpoints == other.tabletBreakpoints &&
           strategy == other.strategy;
 
   @override
-  int get hashCode => Object.hash(
-    watchMaxShortestSide,
-    mobileMaxShortestSide,
-    tabletMaxShortestSide,
-    tabletBreakpoints,
-    strategy,
-  );
+  int get hashCode =>
+      Object.hash(watchMax, mobileMax, tabletMax, tabletBreakpoints, strategy);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties
-      ..add(DoubleProperty('watchMaxShortestSide', watchMaxShortestSide))
-      ..add(DoubleProperty('mobileMaxShortestSide', mobileMaxShortestSide))
-      ..add(DoubleProperty('tabletMaxShortestSide', tabletMaxShortestSide))
+      ..add(DoubleProperty('watchMax', watchMax))
+      ..add(DoubleProperty('mobileMax', mobileMax))
+      ..add(DoubleProperty('tabletMax', tabletMax))
       ..add(
         DiagnosticsProperty<TabletBreakpoints>(
           'tabletBreakpoints',
