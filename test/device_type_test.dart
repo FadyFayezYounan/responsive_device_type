@@ -43,7 +43,7 @@ void main() {
       expect(type.isExpanded, isTrue);
       expect(type.name, 'tablet');
       expect(type.toSimpleString(), 'tablet');
-      expect(type.toString(), 'DeviceType.tablet');
+      expect(type.toString(), 'DeviceType.tablet(medium)');
     });
 
     test('DeviceTypeLargeScreen properties', () {

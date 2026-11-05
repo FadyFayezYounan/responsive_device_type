@@ -62,7 +62,9 @@ class _ShowcaseBody extends StatelessWidget {
     final columns = switch (deviceType) {
       DeviceTypeWatch() => 1,
       DeviceTypeMobile() => 2,
-      DeviceTypeTablet() => 3,
+      DeviceTypeTablet(size: TabletSizeSmall()) => 2,
+      DeviceTypeTablet(size: TabletSizeMedium()) => 3,
+      DeviceTypeTablet(size: TabletSizeLarge()) => 4,
       DeviceTypeLargeScreen() => 4,
     };
 
@@ -105,6 +107,9 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeFromContext = DeviceBreakpoints.deviceTypeOf(context);
+    final tabletSizeInfo = deviceType is DeviceTypeTablet
+        ? (deviceType as DeviceTypeTablet).size.name
+        : 'N/A';
 
     return Card(
       elevation: 0,
@@ -137,6 +142,8 @@ class _HeroCard extends StatelessWidget {
                   label: 'from context',
                   value: typeFromContext.toSimpleString(),
                 ),
+                if (deviceType.isTablet)
+                  _InfoChip(label: 'tablet size', value: tabletSizeInfo),
                 _InfoChip(
                   label: 'breakpoints',
                   value:
@@ -164,7 +171,12 @@ class _PatternCard extends StatelessWidget {
       DeviceTypeWatch() =>
         'Watch layout: keep copy short and tap targets large.',
       DeviceTypeMobile() => 'Mobile layout: single column, bottom navigation.',
-      DeviceTypeTablet() => 'Tablet layout: introduce a second column or rail.',
+      DeviceTypeTablet(size: TabletSizeSmall()) =>
+        'Small tablet layout: 2 columns, suitable for compact tablet displays.',
+      DeviceTypeTablet(size: TabletSizeMedium()) =>
+        'Medium tablet layout: 3 columns, balanced for standard tablets.',
+      DeviceTypeTablet(size: TabletSizeLarge()) =>
+        'Large tablet layout: 4 columns, optimized for iPad Pro-sized devices.',
       DeviceTypeLargeScreen() =>
         'Large screen layout: show persistent navigation and density.',
     };

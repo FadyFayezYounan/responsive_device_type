@@ -3,6 +3,7 @@ import 'dart:ui' show Size;
 import 'package:flutter/foundation.dart' show immutable;
 
 import 'package:responsive_device_type/src/models/breakpoints.dart';
+import 'package:responsive_device_type/src/models/tablet_size.dart';
 
 /// Represents the classification of a device based on screen dimensions.
 ///
@@ -64,7 +65,7 @@ sealed class DeviceType {
   // Factory constructors for each device type
   const factory DeviceType.watch() = DeviceTypeWatch;
   const factory DeviceType.mobile() = DeviceTypeMobile;
-  const factory DeviceType.tablet() = DeviceTypeTablet;
+  const factory DeviceType.tablet({TabletSize size}) = DeviceTypeTablet;
   const factory DeviceType.largeScreen() = DeviceTypeLargeScreen;
 
   /// Creates a [DeviceType] from the given screen [size].
@@ -83,6 +84,24 @@ sealed class DeviceType {
     DeviceBreakpointsData breakpoints = const DeviceBreakpointsData(),
   }) {
     return breakpoints.classify(size);
+  }
+
+  /// Creates a [DeviceType] from the given screen [width].
+  ///
+  /// Unlike [fromSize] which uses the shortest side,
+  /// this method uses the provided [width] directly.
+  ///
+  /// Uses the provided [breakpoints] for classification thresholds.
+  /// If not specified, defaults to [DeviceBreakpoints.defaults].
+  ///
+  /// ```dart
+  /// final type = DeviceType.fromWidth(393);
+  /// ```
+  factory DeviceType.fromWidth(
+    double width, {
+    DeviceBreakpointsData breakpoints = const DeviceBreakpointsData(),
+  }) {
+    return breakpoints.classifyFromWidth(width);
   }
 
   /// Returns `true` if this device type is [DeviceTypeWatch].
@@ -134,26 +153,33 @@ sealed class DeviceType {
 
   /// Pattern matching method that requires handling all device types.
   ///
+  /// The [tablet] callback receives the [TabletSize?] for further
+  /// tablet size classification.
+  ///
   /// ```dart
   /// final layout = deviceType.when(
   ///   watch: () => WatchLayout(),
   ///   mobile: () => MobileLayout(),
-  ///   tablet: () => TabletLayout(),
+  ///   tablet: (size) => TabletLayout(size: size),
   ///   largeScreen: () => DesktopLayout(),
   /// );
   /// ```
   T when<T>({
     required T Function() watch,
     required T Function() mobile,
-    required T Function() tablet,
+    required T Function(TabletSize size) tablet,
     required T Function() largeScreen,
   });
 
   /// Pattern matching method with optional handlers and a fallback.
   ///
+  /// The [tablet] callback receives the [TabletSize?] for further
+  /// tablet size classification.
+  ///
   /// ```dart
   /// final layout = deviceType.maybeWhen(
   ///   mobile: () => MobileLayout(),
+  ///   tablet: (size) => TabletLayout(size: size),
   ///   orElse: () => DefaultLayout(),
   /// );
   /// ```
@@ -161,22 +187,25 @@ sealed class DeviceType {
     required T Function() orElse,
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   });
 
   /// Pattern matching method that returns null if no handler matches.
   ///
+  /// The [tablet] callback receives the [TabletSize?] for further
+  /// tablet size classification.
+  ///
   /// ```dart
   /// final layout = deviceType.whenOrNull(
   ///   mobile: () => MobileLayout(),
-  ///   tablet: () => TabletLayout(),
+  ///   tablet: (size) => TabletLayout(size: size),
   /// );
   /// ```
   T? whenOrNull<T>({
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   });
 
@@ -259,7 +288,7 @@ final class DeviceTypeWatch extends DeviceType {
   T when<T>({
     required T Function() watch,
     required T Function() mobile,
-    required T Function() tablet,
+    required T Function(TabletSize size) tablet,
     required T Function() largeScreen,
   }) => watch();
 
@@ -268,7 +297,7 @@ final class DeviceTypeWatch extends DeviceType {
     required T Function() orElse,
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => watch?.call() ?? orElse();
 
@@ -276,7 +305,7 @@ final class DeviceTypeWatch extends DeviceType {
   T? whenOrNull<T>({
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => watch?.call();
 
@@ -346,7 +375,7 @@ final class DeviceTypeMobile extends DeviceType {
   T when<T>({
     required T Function() watch,
     required T Function() mobile,
-    required T Function() tablet,
+    required T Function(TabletSize size) tablet,
     required T Function() largeScreen,
   }) => mobile();
 
@@ -355,7 +384,7 @@ final class DeviceTypeMobile extends DeviceType {
     required T Function() orElse,
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => mobile?.call() ?? orElse();
 
@@ -363,7 +392,7 @@ final class DeviceTypeMobile extends DeviceType {
   T? whenOrNull<T>({
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => mobile?.call();
 
@@ -406,13 +435,34 @@ final class DeviceTypeMobile extends DeviceType {
 ///
 /// Default threshold: `600 <= shortestSide < 1024`
 ///
+/// Tablet sizes:
+/// * Small: < 720 (e.g., iPad Mini: 744x1133)
+/// * Medium: 720-899 (e.g., iPad: 810x1080)
+/// * Large: >= 900 (e.g., iPad Pro 11": 834x1194)
+///
 /// Examples of tablet devices:
 /// * iPad Pro 11": 834x1194
 /// * iPad Mini: 744x1133
 /// * Galaxy Tab S8: 753x1205
 final class DeviceTypeTablet extends DeviceType {
-  /// Creates a [DeviceTypeTablet] instance.
-  const DeviceTypeTablet() : super._();
+  /// Creates a [DeviceTypeTablet] instance with [size] classification.
+  ///
+  /// Defaults to [TabletSizeMedium] if not specified.
+  const DeviceTypeTablet({this.size = const TabletSizeMedium()}) : super._();
+
+  /// The size classification of this tablet.
+  ///
+  /// Can be [TabletSize.small], [TabletSize.medium], or [TabletSize.large].
+  final TabletSize size;
+
+  /// Returns `true` if this is a small tablet.
+  bool get isSmallTablet => size is TabletSizeSmall;
+
+  /// Returns `true` if this is a medium tablet.
+  bool get isMediumTablet => size is TabletSizeMedium;
+
+  /// Returns `true` if this is a large tablet.
+  bool get isLargeTablet => size is TabletSizeLarge;
 
   @override
   String get name => 'tablet';
@@ -433,26 +483,26 @@ final class DeviceTypeTablet extends DeviceType {
   T when<T>({
     required T Function() watch,
     required T Function() mobile,
-    required T Function() tablet,
+    required T Function(TabletSize size) tablet,
     required T Function() largeScreen,
-  }) => tablet();
+  }) => tablet(size);
 
   @override
   T maybeWhen<T>({
     required T Function() orElse,
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
-  }) => tablet?.call() ?? orElse();
+  }) => tablet?.call(size) ?? orElse();
 
   @override
   T? whenOrNull<T>({
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
-  }) => tablet?.call();
+  }) => tablet?.call(size);
 
   @override
   T map<T>({
@@ -480,13 +530,15 @@ final class DeviceTypeTablet extends DeviceType {
   }) => tablet?.call(this);
 
   @override
-  bool operator ==(Object other) => other is DeviceTypeTablet;
+  bool operator ==(Object other) =>
+      other is DeviceTypeTablet && other.size == size;
 
   @override
-  int get hashCode => name.hashCode;
+  int get hashCode => Object.hash(name, size);
 
   @override
-  String toString() => 'DeviceType.tablet';
+  String toString() =>
+      'DeviceType.tablet(${size.name})';
 }
 
 /// Desktops, laptops, TVs, and other large displays.
@@ -520,7 +572,7 @@ final class DeviceTypeLargeScreen extends DeviceType {
   T when<T>({
     required T Function() watch,
     required T Function() mobile,
-    required T Function() tablet,
+    required T Function(TabletSize size) tablet,
     required T Function() largeScreen,
   }) => largeScreen();
 
@@ -529,7 +581,7 @@ final class DeviceTypeLargeScreen extends DeviceType {
     required T Function() orElse,
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => largeScreen?.call() ?? orElse();
 
@@ -537,7 +589,7 @@ final class DeviceTypeLargeScreen extends DeviceType {
   T? whenOrNull<T>({
     T Function()? watch,
     T Function()? mobile,
-    T Function()? tablet,
+    T Function(TabletSize size)? tablet,
     T Function()? largeScreen,
   }) => largeScreen?.call();
 

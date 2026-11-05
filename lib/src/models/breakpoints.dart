@@ -3,6 +3,7 @@ import 'dart:ui' show Size;
 import 'package:flutter/foundation.dart';
 
 import 'package:responsive_device_type/src/models/device_type.dart';
+import 'package:responsive_device_type/src/models/tablet_size.dart';
 import 'package:responsive_device_type/src/strategies/classification_strategy.dart';
 import 'package:responsive_device_type/src/strategies/standard_strategy.dart';
 
@@ -59,10 +60,14 @@ final class DeviceBreakpointsData with Diagnosticable {
   ///
   /// The [strategy] determines how these thresholds are applied to classify
   /// devices. Defaults to [StandardStrategy].
+  ///
+  /// The [tabletBreakpoints] parameter defines the size thresholds for
+  /// classifying tablets into small, medium, and large categories.
   const DeviceBreakpointsData({
     this.watchMaxShortestSide = 300,
     this.mobileMaxShortestSide = 600,
     this.tabletMaxShortestSide = 1024,
+    this.tabletBreakpoints = const TabletBreakpoints.defaults(),
     this.strategy = const StandardStrategy(),
   }) : assert(
          watchMaxShortestSide > 0,
@@ -98,6 +103,7 @@ final class DeviceBreakpointsData with Diagnosticable {
     : watchMaxShortestSide = 300,
       mobileMaxShortestSide = 600,
       tabletMaxShortestSide = 1024,
+      tabletBreakpoints = const TabletBreakpoints.defaults(),
       strategy = const StandardStrategy();
 
   /// Creates breakpoints aligned with Material Design 3 guidelines.
@@ -114,6 +120,7 @@ final class DeviceBreakpointsData with Diagnosticable {
     : watchMaxShortestSide = 300,
       mobileMaxShortestSide = 600,
       tabletMaxShortestSide = 840,
+      tabletBreakpoints = const TabletBreakpoints.compact(),
       strategy = const StandardStrategy();
 
   /// Maximum shortest side for watch devices.
@@ -140,6 +147,14 @@ final class DeviceBreakpointsData with Diagnosticable {
   /// Default: 1024
   final double tabletMaxShortestSide;
 
+  /// Breakpoints for tablet size classification.
+  ///
+  /// Use [TabletBreakpoints.defaults()], [TabletBreakpoints.compact()],
+  /// [TabletBreakpoints.wide()], or create custom breakpoints.
+  ///
+  /// Default: [TabletBreakpoints.defaults()]
+  final TabletBreakpoints tabletBreakpoints;
+
   /// The strategy used to classify devices.
   ///
   /// Different strategies can produce different results for the same
@@ -158,6 +173,18 @@ final class DeviceBreakpointsData with Diagnosticable {
   /// ```
   DeviceType classify(Size size) => strategy.classify(size, this);
 
+  /// Classifies a device based on the given [width].
+  ///
+  /// Unlike [classify] which uses the shortest side of a [Size],
+  /// this method uses the provided [width] directly.
+  ///
+  /// ```dart
+  /// final breakpoints = DeviceBreakpoints();
+  /// final type = breakpoints.classifyFromWidth(393); // Mobile
+  /// ```
+  DeviceType classifyFromWidth(double width) =>
+      strategy.classifyFromWidth(width, this);
+
   /// Creates a copy of these breakpoints with the given fields replaced.
   ///
   /// ```dart
@@ -169,6 +196,7 @@ final class DeviceBreakpointsData with Diagnosticable {
     double? watchMaxShortestSide,
     double? mobileMaxShortestSide,
     double? tabletMaxShortestSide,
+    TabletBreakpoints? tabletBreakpoints,
     ClassificationStrategy? strategy,
   }) {
     return DeviceBreakpointsData(
@@ -177,6 +205,7 @@ final class DeviceBreakpointsData with Diagnosticable {
           mobileMaxShortestSide ?? this.mobileMaxShortestSide,
       tabletMaxShortestSide:
           tabletMaxShortestSide ?? this.tabletMaxShortestSide,
+      tabletBreakpoints: tabletBreakpoints ?? this.tabletBreakpoints,
       strategy: strategy ?? this.strategy,
     );
   }
@@ -189,6 +218,7 @@ final class DeviceBreakpointsData with Diagnosticable {
           watchMaxShortestSide == other.watchMaxShortestSide &&
           mobileMaxShortestSide == other.mobileMaxShortestSide &&
           tabletMaxShortestSide == other.tabletMaxShortestSide &&
+          tabletBreakpoints == other.tabletBreakpoints &&
           strategy == other.strategy;
 
   @override
@@ -196,6 +226,7 @@ final class DeviceBreakpointsData with Diagnosticable {
     watchMaxShortestSide,
     mobileMaxShortestSide,
     tabletMaxShortestSide,
+    tabletBreakpoints,
     strategy,
   );
 
@@ -206,6 +237,12 @@ final class DeviceBreakpointsData with Diagnosticable {
       ..add(DoubleProperty('watchMaxShortestSide', watchMaxShortestSide))
       ..add(DoubleProperty('mobileMaxShortestSide', mobileMaxShortestSide))
       ..add(DoubleProperty('tabletMaxShortestSide', tabletMaxShortestSide))
+      ..add(
+        DiagnosticsProperty<TabletBreakpoints>(
+          'tabletBreakpoints',
+          tabletBreakpoints,
+        ),
+      )
       ..add(DiagnosticsProperty<ClassificationStrategy>('strategy', strategy));
   }
 }

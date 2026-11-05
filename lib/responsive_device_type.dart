@@ -71,6 +71,7 @@ library;
 export 'src/core/scope.dart';
 export 'src/models/breakpoints.dart' show DeviceBreakpointsData;
 export 'src/models/device_type.dart';
+export 'src/models/tablet_size.dart';
 export 'src/strategies/classification_strategy.dart'
     show ClassificationStrategy;
 export 'src/strategies/standard_strategy.dart' show StandardStrategy;

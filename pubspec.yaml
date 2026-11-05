@@ -6,7 +6,7 @@ repository: https://github.com/yourusername/responsive_device_type
 issue_tracker: https://github.com/yourusername/responsive_device_type/issues
 
 environment:
-  sdk: ^3.10.3
+  sdk: ">=3.8.0 <4.0.0"
   flutter: ">=3.0.0"
 
 dependencies:
