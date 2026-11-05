@@ -135,6 +135,63 @@ void main() {
     });
   });
 
+  group('DeviceBreakpoints classification checks', () {
+    final throwsAssertion = throwsA(isA<AssertionError>());
+
+    test('tablet sizes must sit inside the tablet range', () {
+      // Default tablet sizes are 720 / 900: large would be unreachable.
+      const lowTabletMax = DeviceBreakpointsData(tabletMax: 840);
+      expect(
+        () => lowTabletMax.classify(const Size(700, 900)),
+        throwsAssertion,
+      );
+      expect(() => lowTabletMax.classifyFromWidth(700), throwsAssertion);
+
+      // mediumMax == tabletMax also leaves large unreachable.
+      const equalTabletMax = DeviceBreakpointsData(tabletMax: 900);
+      expect(() => equalTabletMax.classifyFromWidth(700), throwsAssertion);
+
+      // Small would be unreachable.
+      const highMobileMax = DeviceBreakpointsData(mobileMax: 760);
+      expect(() => highMobileMax.classifyFromWidth(800), throwsAssertion);
+    });
+
+    test('consistent custom tablet sizes are accepted', () {
+      const breakpoints = DeviceBreakpointsData(
+        tabletMax: 840,
+        tabletBreakpoints: TabletBreakpoints.compact(),
+      );
+      expect(
+        breakpoints.classifyFromWidth(820),
+        const DeviceType.tablet(size: TabletSize.large()),
+      );
+      expect(
+        const DeviceBreakpointsData.material3().classifyFromWidth(820),
+        const DeviceType.tablet(size: TabletSize.large()),
+      );
+    });
+
+    test('rejects NaN and negative sizes', () {
+      const breakpoints = DeviceBreakpointsData();
+      expect(() => breakpoints.classifyFromWidth(double.nan), throwsAssertion);
+      expect(() => breakpoints.classifyFromWidth(-1), throwsAssertion);
+      expect(
+        () => breakpoints.classify(const Size(double.nan, 800)),
+        throwsAssertion,
+      );
+      expect(() => breakpoints.classify(const Size(400, -1)), throwsAssertion);
+    });
+
+    test('zero and unbounded sizes still classify', () {
+      const breakpoints = DeviceBreakpointsData();
+      expect(breakpoints.classify(Size.zero), const DeviceType.watch());
+      expect(
+        breakpoints.classifyFromWidth(double.infinity),
+        const DeviceType.largeScreen(),
+      );
+    });
+  });
+
   group('DeviceBreakpoints.copyWith', () {
     test('copies with new values', () {
       const original = DeviceBreakpointsData();

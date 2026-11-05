@@ -268,5 +268,110 @@ void main() {
       // The end pane still starts at the hinge in screen coordinates.
       expect(tester.getRect(find.text('end')).top, 420);
     });
+
+    group('pane MediaQuery', () {
+      late MediaQueryData startData;
+      late MediaQueryData endData;
+
+      Widget capture(String label, void Function(MediaQueryData) sink) {
+        return Builder(
+          builder: (context) {
+            sink(MediaQuery.of(context));
+            return Text(label);
+          },
+        );
+      }
+
+      Widget host(MediaQueryData data, {EdgeInsets padding = EdgeInsets.zero}) {
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: data,
+            child: Padding(
+              padding: padding,
+              child: DualPaneLayout(
+                padding: padding,
+                start: capture('start', (d) => startData = d),
+                end: capture('end', (d) => endData = d),
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('book: sizes match the laid-out panes below an app bar', (
+        tester,
+      ) async {
+        tester.view.physicalSize = _duoSize;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          host(
+            const MediaQueryData(size: _duoSize, displayFeatures: [_duoHinge]),
+            padding: const EdgeInsets.only(top: 56),
+          ),
+        );
+
+        expect(startData.size, const Size(540, 664));
+        expect(endData.size, const Size(540, 664));
+        expect(tester.getRect(find.text('end')).left, 574);
+      });
+
+      testWidgets('tabletop: sizes match the laid-out panes below an app bar', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(900, 840);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          host(
+            const MediaQueryData(
+              size: Size(900, 840),
+              displayFeatures: [_tabletopFold],
+            ),
+            padding: const EdgeInsets.only(top: 56),
+          ),
+        );
+
+        expect(startData.size, const Size(900, 364));
+        expect(endData.size, const Size(900, 420));
+        expect(tester.getRect(find.text('end')).top, 420);
+      });
+
+      testWidgets('tabletop: keyboard insets only reach the bottom pane', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(900, 840);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          host(
+            const MediaQueryData(
+              size: Size(900, 840),
+              displayFeatures: [_tabletopFold],
+              padding: EdgeInsets.only(top: 24, bottom: 16),
+              viewPadding: EdgeInsets.only(top: 24, bottom: 16),
+              viewInsets: EdgeInsets.only(bottom: 300),
+              systemGestureInsets: EdgeInsets.only(bottom: 20),
+            ),
+          ),
+        );
+
+        expect(startData.viewInsets, EdgeInsets.zero);
+        expect(startData.systemGestureInsets, EdgeInsets.zero);
+        expect(startData.padding, const EdgeInsets.only(top: 24));
+        expect(startData.viewPadding, const EdgeInsets.only(top: 24));
+        expect(startData.displayFeatures, isEmpty);
+
+        expect(endData.viewInsets, const EdgeInsets.only(bottom: 300));
+        expect(endData.systemGestureInsets, const EdgeInsets.only(bottom: 20));
+        expect(endData.padding, const EdgeInsets.only(bottom: 16));
+        expect(endData.viewPadding, const EdgeInsets.only(bottom: 16));
+        expect(endData.displayFeatures, isEmpty);
+      });
+    });
   });
 }
