@@ -105,7 +105,17 @@ final class DeviceBreakpointsData with Diagnosticable {
   /// ```dart
   /// const DeviceBreakpointsData().classify(const Size(393, 852)); // mobile
   /// ```
-  DeviceType classify(Size size) => strategy.classify(size, this);
+  ///
+  /// In debug mode, asserts that [size] is not negative or NaN and that the
+  /// tablet sizes fit inside the tablet range (see [debugAssertConsistent]).
+  DeviceType classify(Size size) {
+    assert(debugAssertConsistent());
+    assert(
+      _isValidExtent(size.width) && _isValidExtent(size.height),
+      'Cannot classify $size: width and height must be non-negative numbers.',
+    );
+    return strategy.classify(size, this);
+  }
 
   /// Classifies a single [width], ignoring height.
   ///
@@ -120,8 +130,45 @@ final class DeviceBreakpointsData with Diagnosticable {
   ///   },
   /// )
   /// ```
-  DeviceType classifyFromWidth(double width) =>
-      strategy.classifyFromWidth(width, this);
+  ///
+  /// In debug mode, asserts that [width] is not negative or NaN and that the
+  /// tablet sizes fit inside the tablet range (see [debugAssertConsistent]).
+  /// An unbounded width (`double.infinity`) classifies as large screen.
+  DeviceType classifyFromWidth(double width) {
+    assert(debugAssertConsistent());
+    assert(
+      _isValidExtent(width),
+      'Cannot classify width $width: it must be a non-negative number.',
+    );
+    return strategy.classifyFromWidth(width, this);
+  }
+
+  /// Asserts that every [TabletSize] can be reached.
+  ///
+  /// Tablets are extents in `[mobileMax, tabletMax)`, so the thresholds must
+  /// be ordered `mobileMax < tabletBreakpoints.smallMax <
+  /// tabletBreakpoints.mediumMax < tabletMax`. Otherwise small or large
+  /// tablets are never produced, without any error.
+  ///
+  /// The constructor cannot check this because it is `const`, so
+  /// [classify] and [classifyFromWidth] call it in debug mode. Always
+  /// returns `true` so it can be used inside an `assert`.
+  bool debugAssertConsistent() {
+    final small = tabletBreakpoints.smallMax;
+    final medium = tabletBreakpoints.mediumMax;
+    assert(
+      mobileMax < small && medium < tabletMax,
+      'Inconsistent breakpoints: tablets span [$mobileMax, $tabletMax), but '
+      'tabletBreakpoints are smallMax: $small, mediumMax: $medium. They must '
+      'satisfy mobileMax < smallMax < mediumMax < tabletMax, or '
+      '${mobileMax >= small ? 'small' : 'large'} tablets are unreachable. '
+      'Pass matching tabletBreakpoints, for example '
+      'TabletBreakpoints.compact() with tabletMax: 840.',
+    );
+    return true;
+  }
+
+  static bool _isValidExtent(double extent) => !extent.isNaN && extent >= 0;
 
   /// Returns a copy with the given fields replaced.
   DeviceBreakpointsData copyWith({

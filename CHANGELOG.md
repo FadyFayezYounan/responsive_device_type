@@ -18,6 +18,10 @@ Initial release.
 - `DeviceBreakpointsData` with `watchMax`, `mobileMax`, `tabletMax`,
   `tabletBreakpoints`, and `strategy`, plus `defaults()` and `material3()`
   presets.
+- Debug-mode checks: breakpoints must be ascending, tablet sizes must fit
+  inside the tablet range (`mobileMax < smallMax < mediumMax < tabletMax`, so
+  no tablet size is unreachable), and sizes passed to `classify` /
+  `classifyFromWidth` must not be negative or NaN.
 - Strategies: `StandardStrategy` (shortest side, default),
   `WindowWidthStrategy` (width, used by `material3()`), and
   `StrictTabletStrategy` (wide landscape windows become large screens).
@@ -47,4 +51,6 @@ Initial release.
   `posture`, `hingeAxis`, `isTabletop`, `isBook`, `isSeparating`, `bounds`,
   and `panes`.
 - `DualPaneLayout` places two widgets around a separating hinge, respects
-  text direction, and gives each pane its own `MediaQuery`.
+  text direction, and gives each pane its own `MediaQuery` whose size matches
+  the laid-out pane and whose padding, view padding, keyboard insets, and
+  system gesture insets are clipped to that pane.

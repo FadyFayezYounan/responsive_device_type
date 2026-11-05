@@ -62,7 +62,7 @@ void main() {
 
       const scopeBreakpoints = DeviceBreakpointsData(
         mobileMax: 500,
-        tabletMax: 900,
+        tabletMax: 960,
       );
 
       await tester.pumpWidget(

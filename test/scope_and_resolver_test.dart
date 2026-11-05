@@ -68,7 +68,7 @@ void main() {
     testWidgets('nested scopes use nearest ancestor', (tester) async {
       const outerBreakpoints = DeviceBreakpointsData(
         mobileMax: 500,
-        tabletMax: 900,
+        tabletMax: 960,
       );
       const innerBreakpoints = DeviceBreakpointsData(
         mobileMax: 640,
